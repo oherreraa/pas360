@@ -1,0 +1,14 @@
+# Secretos — nunca commitear
+.env
+
+# PDFs de casos de prueba (pueden pesar y no son código)
+docs/casos-prueba/*.pdf
+
+# Dependencias / entornos
+node_modules/
+__pycache__/
+.venv/
+*.pyc
+
+# Sistema
+.DS_Store
