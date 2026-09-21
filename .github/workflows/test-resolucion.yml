@@ -1,0 +1,35 @@
+name: Test extracción resolución TFA
+
+on:
+  workflow_dispatch:
+    inputs:
+      pdf_url:
+        description: "URL directa del PDF (vacío = resolución de prueba)"
+        required: false
+      detail_url:
+        description: "URL de la página de publicación (vacío = resolución de prueba)"
+        required: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r scraper/requirements.txt
+
+      - run: python scraper/extract_resolucion.py
+        env:
+          PDF_URL: ${{ inputs.pdf_url }}
+          DETAIL_URL: ${{ inputs.detail_url }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resultado-extraccion
+          path: |
+            resultado.json
+            detalle.html
