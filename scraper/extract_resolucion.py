@@ -33,9 +33,10 @@ HEADERS = {
 }
 
 RESOLUCION_RE = re.compile(
-    r"RESOLUCI[ÓO]N\s+N[°ºO.]*\s*([\d]+-\d{4}-OEFA[\w/\-]*)", re.IGNORECASE
+    r"RESOLUCI[ÓO]N\s+N[°ºO.]*\s*:?\s*([\d]+-\d{4}-OEFA[\w/\-]*)", re.IGNORECASE
 )
-EXPEDIENTE_RE = re.compile(r"EXPEDIENTE\s+N[°ºO.]*\s*([\w./\-]+)", re.IGNORECASE)
+EXPEDIENTE_RE = re.compile(r"EXPEDIENTE\s+N[°ºO.]*\s*:?\s*([\w./\-]+)", re.IGNORECASE)
+SECTOR_RE = re.compile(r"SECTOR\s*:?\s*([A-ZÁÉÍÓÚÑ ]+)")
 
 
 def fetch(url: str) -> bytes:
@@ -61,6 +62,8 @@ def main() -> None:
 
     resolucion_match = RESOLUCION_RE.search(texto)
     expediente_match = EXPEDIENTE_RE.search(texto)
+    sector_match_pdf = SECTOR_RE.search(texto)
+    sector_match_detalle = SECTOR_RE.search(detalle_html.upper())
 
     resultado = {
         "url_pdf": PDF_URL,
@@ -69,6 +72,11 @@ def main() -> None:
         "texto_len": len(texto),
         "numero_resolucion": resolucion_match.group(1) if resolucion_match else None,
         "expediente": expediente_match.group(1) if expediente_match else None,
+        "sector_en_pdf": sector_match_pdf.group(1).strip() if sector_match_pdf else None,
+        "sector_en_detalle_html": (
+            sector_match_detalle.group(1).strip() if sector_match_detalle else None
+        ),
+        "detalle_html_bytes": len(detalle_html),
         "texto_preview": texto[:3000],
     }
 
