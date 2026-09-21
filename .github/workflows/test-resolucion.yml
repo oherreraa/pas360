@@ -34,10 +34,6 @@ jobs:
         env:
           LISTADO_URL: ${{ inputs.listado_url }}
 
-      - run: python scraper/sector_precheck.py
-        env:
-          PDF_URL: ${{ inputs.pdf_url }}
-
       - uses: actions/upload-artifact@v4
         with:
           name: resultado-extraccion
