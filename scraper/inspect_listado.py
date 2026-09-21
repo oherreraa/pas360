@@ -22,10 +22,7 @@ HEADERS = {
     "Accept-Language": "es-PE,es;q=0.9",
 }
 
-LINK_RE = re.compile(
-    r'href="(/institucion/oefa/informes-publicaciones/[^"]+)"[^>]*>([^<]*)<',
-    re.IGNORECASE,
-)
+HREF_RE = re.compile(r'href="([^"]+)"')
 SHEET_RE = re.compile(r"[?&]sheet=(\d+)")
 
 
@@ -39,13 +36,30 @@ def main() -> None:
 
     print(f"status_code={resp.status_code} html_bytes={len(html)}")
 
-    matches = LINK_RE.findall(html)
-    print(f"enlaces_a_resoluciones_encontrados={len(matches)}")
-    for href, text in matches[:20]:
-        print(f"  - {href.strip()} | {text.strip()[:90]}")
+    all_hrefs = HREF_RE.findall(html)
+    print(f"total_hrefs={len(all_hrefs)}")
+
+    informes_hrefs = sorted(set(h for h in all_hrefs if "/informes-publicaciones/" in h))
+    print(f"informes_hrefs_unicos={len(informes_hrefs)}")
+    for h in informes_hrefs[:30]:
+        print(f"  - {h}")
+
+    numeric_hrefs = [h for h in informes_hrefs if re.search(r"/informes-publicaciones/\d", h)]
+    print(f"numeric_resolution_hrefs={len(numeric_hrefs)}")
+    for h in numeric_hrefs[:30]:
+        print(f"  - {h}")
+
+    print(f"contains_id_8511383={'8511383' in html}")
+    print(f"contains_numero_422-2026={'422-2026' in html}")
+    print(f"script_tag_count={html.count('<script')}")
+    print(f"json_ld_scripts={html.count('application/json')}")
 
     sheet_numbers = sorted(set(int(n) for n in SHEET_RE.findall(html)))
     print(f"numeros_de_pagina_referenciados={sheet_numbers}")
+
+    print("---HTML_SNIPPET_START---")
+    print(html[:4000])
+    print("---HTML_SNIPPET_END---")
 
 
 if __name__ == "__main__":
