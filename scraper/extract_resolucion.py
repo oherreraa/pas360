@@ -75,9 +75,12 @@ def main() -> None:
     sector = sector_match_pdf.group(1).strip() if sector_match_pdf else None
     en_alcance = sector in SECTORES_EN_ALCANCE
 
+    pdf_links_en_detalle = re.findall(r'href="([^"]+\.pdf[^"]*)"', detalle_html)
+
     resultado = {
         "url_pdf": PDF_URL,
         "url_detalle": DETAIL_URL,
+        "pdf_links_en_detalle": pdf_links_en_detalle,
         "pdf_bytes": len(pdf_bytes),
         "texto_len": len(texto),
         "numero_resolucion": resolucion_match.group(1) if resolucion_match else None,
