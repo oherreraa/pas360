@@ -134,6 +134,7 @@ async function abrirExpediente(id) {
   document.getElementById('vista-expediente').style.display = 'block';
   window.scrollTo(0, 0);
   document.getElementById('exp-header').innerHTML = '<p class="vacio">Cargando expediente…</p>';
+  document.getElementById('exp-resumen').innerHTML = '<p class="esquema-cargando">Generando resumen…</p>';
   document.getElementById('exp-esquema').innerHTML = '<p class="esquema-cargando">Generando esquema…</p>';
   document.getElementById('exp-secciones').innerHTML = '';
   document.getElementById('exp-referencias').innerHTML = '';
@@ -149,6 +150,7 @@ async function abrirExpediente(id) {
     const detalle = await resp.json();
     if (!detalle || !detalle.resolucion) {
       document.getElementById('exp-header').innerHTML = '<p class="vacio">Esta resolución no está disponible en la base.</p>';
+      document.getElementById('exp-resumen').innerHTML = '';
       document.getElementById('exp-esquema').innerHTML = '';
       resolucionActual = null;
       return;
@@ -159,12 +161,14 @@ async function abrirExpediente(id) {
     cargarEsquema(detalle.resolucion.id);
   } catch (e) {
     document.getElementById('exp-header').innerHTML = '<p class="vacio">Error cargando el expediente.</p>';
+    document.getElementById('exp-resumen').innerHTML = '';
     document.getElementById('exp-esquema').innerHTML = '';
   }
 }
 
 async function cargarEsquema(id) {
-  const cont = document.getElementById('exp-esquema');
+  const contResumen = document.getElementById('exp-resumen');
+  const contDiagrama = document.getElementById('exp-esquema');
   try {
     const resp = await fetch(API_ESQUEMA, {
       method: 'POST',
@@ -172,19 +176,26 @@ async function cargarEsquema(id) {
       body: JSON.stringify({ resolucion_id: id }),
     });
     const data = await resp.json();
+
+    const resumen = data.resumen;
+    contResumen.innerHTML = resumen
+      ? resumen.split('\n').filter(p => p.trim()).map(p => `<p>${p.replace(/</g, '&lt;')}</p>`).join('')
+      : '<p class="vacio">No se pudo generar el resumen.</p>';
+
     const codigo = data.mermaid;
-    if (!codigo) { cont.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>'; return; }
+    if (!codigo) { contDiagrama.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>'; return; }
     if (!mermaidListo && window.mermaid) {
       const tema = document.documentElement.getAttribute('data-theme') === 'light' ? 'neutral' : 'dark';
       window.mermaid.initialize({ startOnLoad: false, theme: tema, fontFamily: 'Plus Jakarta Sans, sans-serif' });
       mermaidListo = true;
     }
-    if (!window.mermaid) { cont.innerHTML = '<p class="vacio">No se pudo cargar el motor de diagramas.</p>'; return; }
+    if (!window.mermaid) { contDiagrama.innerHTML = '<p class="vacio">No se pudo cargar el motor de diagramas.</p>'; return; }
     const idSvg = 'mermaid-' + Date.now();
     const { svg } = await window.mermaid.render(idSvg, codigo);
-    cont.innerHTML = `<div class="esquema-contenedor">${svg}</div>`;
+    contDiagrama.innerHTML = `<div class="esquema-contenedor">${svg}</div>`;
   } catch (e) {
-    cont.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>';
+    contResumen.innerHTML = '<p class="vacio">No se pudo generar el resumen.</p>';
+    contDiagrama.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>';
   }
 }
 
