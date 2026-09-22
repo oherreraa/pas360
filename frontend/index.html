@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PAS 360°</title>
 <meta name="description" content="Cómo se resuelven realmente los procedimientos administrativos sancionadores de OEFA en hidrocarburos e industria — análisis retrospectivo de resoluciones del TFA, con un asistente que responde sobre cada expediente." />
+<meta name="author" content="Oscar Herrera" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%2315130f'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23e08a3c' font-family='Georgia,serif'%3E360%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css" />
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
   /* Fija el tema ANTES del primer paint para evitar parpadeo (FOUC) al cargar. */
@@ -24,6 +24,437 @@
     } catch (e) { /* almacenamiento no disponible */ }
   })();
 </script>
+<style>
+:root{
+  /* ---- oscuro (default) ---- */
+  --bg:#15130f;
+  --bg-raised:#1b190f;
+  --bg-card:#201d16;
+  --bg-card-hover:#231f16;
+  --ink:#f1ead9;
+  --ink-soft:#a89c81;
+  --ink-faint:#6d6450;
+  --line:#332e21;
+  --line-strong:#4d4630;
+  --accent:#ff9d2e;
+  --accent-soft:#402a10;
+  --accent-ink:#1a0f04;
+  --ok:#4fcf6e;
+  --ok-soft:#183321;
+  --bad:#ff5c4d;
+  --bad-soft:#3a1712;
+  --info:#4fb3ff;
+  --grain-opacity:0.035;
+  --grain-blend:overlay;
+
+  --display:'Plus Jakarta Sans', system-ui, sans-serif;
+  --sans:'Plus Jakarta Sans', -apple-system, sans-serif;
+  --mono:'Space Mono', ui-monospace, monospace;
+  --radius:12px;
+}
+
+:root[data-theme="light"]{
+  --bg:#f4eee1;
+  --bg-raised:#ece3cf;
+  --bg-card:#fbf8f1;
+  --bg-card-hover:#f3ecdc;
+  --ink:#221e15;
+  --ink-soft:#665d48;
+  --ink-faint:#948a6e;
+  --line:#e0d6bc;
+  --line-strong:#c9bc98;
+  --accent:#e2660a;
+  --accent-soft:#fbe1c4;
+  --accent-ink:#fffaf1;
+  --ok:#2f9d47;
+  --ok-soft:#dcf0dd;
+  --bad:#e0392a;
+  --bad-soft:#fadbd5;
+  --info:#1f7ae0;
+  --grain-opacity:0.025;
+  --grain-blend:multiply;
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  min-height:100vh;
+  transition:background-color 0.2s ease, color 0.2s ease;
+}
+body::before{
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:1000;
+  opacity:var(--grain-opacity); mix-blend-mode:var(--grain-blend);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a{color:inherit;}
+::selection{background:var(--accent); color:var(--accent-ink);}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0; letter-spacing:-0.01em;}
+
+header.masthead{
+  border-bottom:1px solid var(--line);
+  padding:1.5rem 2rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  max-width:1320px;
+  margin:0 auto;
+}
+header.masthead .marca{
+  font-family:var(--display);
+  font-weight:700;
+  font-size:1.25rem;
+  letter-spacing:-0.02em;
+}
+header.masthead .marca span{color:var(--accent);}
+header.masthead .lado-derecho{display:flex; align-items:center; gap:1rem;}
+header.masthead .kicker{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+}
+.toggle-tema{
+  font-family:var(--mono);
+  font-size:0.7rem;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  background:var(--bg-card);
+  border:1px solid var(--line-strong);
+  color:var(--ink-soft);
+  padding:0.4rem 0.75rem;
+  border-radius:100px;
+  cursor:pointer;
+  transition:border-color 0.15s ease, color 0.15s ease;
+}
+.toggle-tema:hover{border-color:var(--accent); color:var(--ink);}
+
+.envoltura{max-width:1320px; margin:0 auto; padding:0 2rem;}
+
+/* ---------- VISTA BUSCAR ---------- */
+.hero{
+  padding:4.5rem 0 2.5rem;
+  max-width:760px;
+}
+.hero .etiqueta-scope{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--accent);
+  border:1px solid var(--accent-soft);
+  background:var(--accent-soft);
+  padding:0.3rem 0.65rem;
+  border-radius:100px;
+  margin-bottom:1.4rem;
+}
+.hero h1{
+  font-size:clamp(2.3rem, 4.2vw, 3.4rem);
+  line-height:1.05;
+}
+.hero h1 em{font-style:normal; color:var(--accent);}
+.hero p.lead{
+  color:var(--ink-soft);
+  font-size:1.05rem;
+  max-width:56ch;
+  margin:1.1rem 0 0;
+}
+.hero .disclaimer{
+  margin-top:1rem;
+  font-size:0.82rem;
+  color:var(--ink-faint);
+  border-left:2px solid var(--line-strong);
+  padding-left:0.75rem;
+}
+
+.selector{
+  background:var(--bg-raised);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:1.6rem;
+  margin-bottom:2.5rem;
+}
+.selector .fila{
+  display:flex;
+  gap:0.6rem;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.selector .fila + .fila{margin-top:1rem;}
+.selector label.rotulo{
+  font-family:var(--mono);
+  font-size:0.7rem;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--ink-faint);
+  width:100%;
+  margin-bottom:0.1rem;
+}
+.chip{
+  font-family:var(--sans);
+  font-size:0.86rem;
+  font-weight:500;
+  background:var(--bg-card);
+  border:1px solid var(--line-strong);
+  color:var(--ink-soft);
+  padding:0.5rem 0.95rem;
+  border-radius:100px;
+  cursor:pointer;
+  transition:background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.chip:hover{border-color:var(--accent); color:var(--ink); transform:translateY(-1px);}
+.chip:active{transform:translateY(0);}
+.chip.activo{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+
+.campo-busqueda{
+  flex:1;
+  min-width:240px;
+  display:flex;
+  gap:0.5rem;
+}
+.campo-busqueda input{
+  flex:1;
+  background:var(--bg-card);
+  border:1px solid var(--line-strong);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:0.92rem;
+  padding:0.65rem 0.9rem;
+  border-radius:8px;
+  outline:none;
+  transition:border-color 0.15s ease;
+}
+.campo-busqueda input:focus{border-color:var(--accent);}
+.campo-busqueda input::placeholder{color:var(--ink-faint);}
+button.primario{
+  font-family:var(--sans);
+  font-weight:600;
+  font-size:0.9rem;
+  background:var(--accent);
+  color:var(--accent-ink);
+  border:none;
+  padding:0.65rem 1.3rem;
+  border-radius:8px;
+  cursor:pointer;
+  transition:filter 0.15s ease, transform 0.1s ease;
+}
+button.primario:hover{filter:brightness(1.1);}
+button.primario:active{transform:scale(0.98);}
+
+.resumen-total{
+  font-family:var(--mono);
+  font-size:0.78rem;
+  color:var(--ink-faint);
+  margin:0 0 1rem;
+}
+
+.lista-resultados{display:flex; flex-direction:column; gap:0.6rem; margin-bottom:2rem;}
+.tarjeta{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:1.1rem 1.3rem;
+  cursor:pointer;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:0.6rem 1.5rem;
+  align-items:center;
+  transition:border-color 0.15s ease, background 0.15s ease;
+}
+.tarjeta:hover{border-color:var(--line-strong); background:var(--bg-card-hover);}
+.tarjeta .num{font-family:var(--mono); font-size:0.78rem; color:var(--ink-faint);}
+.tarjeta .admin{font-family:var(--display); font-weight:600; font-size:1.05rem; margin:0.15rem 0 0.3rem;}
+.tarjeta .sumilla-corta{font-size:0.85rem; color:var(--ink-soft); max-width:60ch; grid-column:1;}
+.tarjeta .derecha{text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;}
+.tarjeta .multa{font-family:var(--mono); font-size:0.8rem; color:var(--ink-faint);}
+
+.etiqueta{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:0.66rem;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  padding:0.2rem 0.5rem;
+  border-radius:100px;
+  margin:0 0.3rem 0.2rem 0;
+  border:1px solid transparent;
+}
+.etiqueta.confirma{color:var(--accent); background:var(--accent-soft); border-color:var(--accent-soft);}
+.etiqueta.revoca, .etiqueta.reforma{color:var(--ok); background:var(--ok-soft); border-color:var(--ok-soft);}
+.etiqueta.nulidad{color:var(--bad); background:var(--bad-soft); border-color:var(--bad-soft);}
+.etiqueta.archivo{color:var(--ink-soft); background:var(--bg-raised); border-color:var(--line-strong);}
+.etiqueta.precedente{color:var(--info); background:transparent; border-color:var(--line-strong);}
+
+.paginacion{
+  display:flex; gap:0.75rem; align-items:center;
+  font-family:var(--mono); font-size:0.8rem; color:var(--ink-soft);
+  margin-bottom:3rem;
+}
+.paginacion button{
+  background:var(--bg-card); border:1px solid var(--line-strong); color:var(--ink);
+  padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-family:var(--mono);
+}
+.paginacion button:disabled{opacity:0.3; cursor:default;}
+.vacio{color:var(--ink-faint); font-size:0.9rem; padding:2rem 0;}
+
+/* ---------- VISTA EXPEDIENTE ---------- */
+#vista-expediente{display:none; padding-bottom:4rem;}
+.btn-volver{
+  font-family:var(--mono); font-size:0.8rem; background:none; border:1px solid var(--line-strong);
+  color:var(--ink-soft); padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; margin:1.5rem 0 1.5rem;
+}
+.btn-volver:hover{border-color:var(--accent); color:var(--accent);}
+
+.exp-header{margin-bottom:2rem;}
+.exp-header .num-grande{font-family:var(--mono); font-size:0.95rem; color:var(--accent);}
+.exp-header h2{font-size:clamp(1.5rem, 3vw, 2.1rem); margin:0.3rem 0 0.5rem;}
+.exp-header .meta{color:var(--ink-soft); font-size:0.92rem;}
+.exp-header .sumilla{
+  font-size:1rem; line-height:1.65; color:var(--ink);
+  border-left:2px solid var(--accent);
+  padding-left:1rem; margin:1.2rem 0 0; max-width:80ch;
+}
+
+/* Esquema (Mermaid) */
+.esquema{
+  margin:2rem 0 2.5rem;
+  background:var(--bg-raised);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:1.4rem;
+}
+.esquema .esquema-cabecera{
+  font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--ink-faint); margin-bottom:1rem;
+}
+.esquema-contenedor{
+  overflow-x:auto;
+  display:flex;
+  justify-content:center;
+}
+.esquema-contenedor svg{max-width:100%; height:auto;}
+#exp-resumen p{
+  font-size:0.94rem; line-height:1.7; color:var(--ink);
+  margin:0 0 0.9rem;
+}
+#exp-resumen p:last-child{margin-bottom:0;}
+.esquema-cargando{
+  font-family:var(--mono); font-size:0.82rem; color:var(--ink-faint);
+  padding:1.5rem 0; text-align:center;
+}
+.esquema-cargando::after{
+  content:''; display:inline-block; width:0.9em; height:0.9em; margin-left:0.5em;
+  border:2px solid var(--line-strong); border-top-color:var(--accent); border-radius:50%;
+  animation:girar 0.7s linear infinite; vertical-align:middle;
+}
+@keyframes girar{ to { transform:rotate(360deg); } }
+
+.exp-cuerpo{
+  display:grid;
+  grid-template-columns:1fr 400px;
+  gap:2.2rem;
+  align-items:start;
+}
+@media (max-width: 980px){ .exp-cuerpo{grid-template-columns:1fr;} }
+
+.documento h3.subtitulo{
+  font-family:var(--mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--ink-faint); margin:2rem 0 0.8rem; border-bottom:1px solid var(--line); padding-bottom:0.5rem;
+}
+.seccion-doc{
+  margin-bottom:0.7rem;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+}
+.seccion-doc summary{
+  font-family:var(--sans); font-weight:500; font-size:0.86rem;
+  color:var(--ink); cursor:pointer; padding:0.75rem 1rem; list-style:none;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.seccion-doc summary::-webkit-details-marker{display:none;}
+.seccion-doc summary::after{content:'+'; color:var(--ink-faint); font-family:var(--mono);}
+.seccion-doc[open] summary::after{content:'\2212';}
+.seccion-doc .contenido{
+  font-size:0.86rem; white-space:pre-wrap; padding:0 1rem 1rem; color:var(--ink-soft); line-height:1.6;
+}
+.referencias-lista{list-style:none; padding:0; margin:0; font-size:0.85rem;}
+.referencias-lista li{padding:0.6rem 0; border-bottom:1px solid var(--line);}
+.referencias-lista .tipo{font-family:var(--mono); font-size:0.68rem; color:var(--info); display:block; margin-bottom:0.15rem;}
+.referencias-lista li.anclada{cursor:pointer; transition:background 0.15s ease; margin:0 -0.5rem; padding:0.6rem 0.5rem; border-radius:6px;}
+.referencias-lista li.anclada:hover{background:var(--bg-card);}
+.referencias-lista li.anclada .numero{color:var(--accent); font-weight:600;}
+.referencias-lista li.anclada .flecha{float:right; color:var(--ink-faint); font-family:var(--mono);}
+
+/* Chat */
+.chat-panel{
+  position:sticky; top:1.5rem;
+  background:var(--bg-raised);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  display:flex; flex-direction:column;
+  height:min(640px, 80vh);
+}
+.chat-panel .chat-head{
+  padding:1rem 1.2rem;
+  border-bottom:1px solid var(--line);
+}
+.chat-panel .chat-head .titulo{font-family:var(--display); font-weight:600; font-size:1rem;}
+.chat-panel .chat-head .subtitulo{font-family:var(--mono); font-size:0.7rem; color:var(--ink-faint); margin-top:0.2rem;}
+.chat-mensajes{
+  flex:1; overflow-y:auto; padding:1.1rem 1.2rem; display:flex; flex-direction:column; gap:0.9rem;
+}
+.msg{font-size:0.88rem; line-height:1.55;}
+.msg.usuario{align-self:flex-end; max-width:88%; background:var(--accent-soft); color:var(--ink); padding:0.6rem 0.85rem; border-radius:10px 10px 2px 10px;}
+.msg.asistente{max-width:100%; color:var(--ink);}
+.msg.asistente .cabecera-asistente{font-family:var(--mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:0.35rem;}
+.msg.asistente p{margin:0 0 0.6rem;}
+.msg.asistente p:last-child{margin-bottom:0;}
+.msg.asistente strong{color:var(--ink); font-weight:600;}
+.msg.asistente ul{margin:0.3rem 0 0.6rem; padding-left:1.2rem;}
+.msg.cargando{color:var(--ink-faint); font-family:var(--mono); font-size:0.8rem;}
+.chat-vacio{color:var(--ink-faint); font-size:0.85rem;}
+.chat-input{
+  display:flex; gap:0.5rem; padding:0.9rem;
+  border-top:1px solid var(--line);
+}
+.chat-input textarea{
+  flex:1; resize:none; background:var(--bg-card); border:1px solid var(--line-strong);
+  color:var(--ink); font-family:var(--sans); font-size:0.86rem; padding:0.6rem 0.75rem;
+  border-radius:8px; outline:none; min-height:42px; max-height:120px;
+}
+.chat-input textarea:focus{border-color:var(--accent);}
+.chat-input button{
+  background:var(--accent); color:var(--accent-ink); border:none; border-radius:8px;
+  padding:0 1.1rem; font-family:var(--sans); font-weight:600; cursor:pointer; font-size:0.86rem;
+}
+.chat-input button:disabled{opacity:0.4; cursor:default;}
+.chat-disclaimer{
+  font-size:0.72rem; color:var(--ink-faint); padding:0 1.2rem 0.9rem; font-family:var(--mono);
+}
+
+footer.pie{
+  max-width:1320px; margin:0 auto; padding:2.5rem 2rem 3rem;
+  color:var(--ink-faint); font-size:0.8rem; border-top:1px solid var(--line);
+}
+footer.pie .autor{
+  margin-top:0.6rem;
+  font-family:var(--mono);
+  font-size:0.75rem;
+}
+</style>
 </head>
 <body>
 
@@ -140,8 +571,358 @@
 
 <footer class="pie">
   PAS 360° — capa de análisis retrospectivo sobre resoluciones públicas del TFA y la DFAI (OEFA). Sectores hidrocarburos e industria únicamente. Herramienta de investigación, no un sustituto de asesoría legal.
+  <div class="autor">Creado por Oscar Herrera</div>
 </footer>
 
-<script src="app.js"></script>
+<script>
+const API_LISTADO = '/webhook/pas360-listado';
+const API_DETALLE = '/webhook/pas360-detalle';
+const API_CHAT = '/webhook/pas360-chat';
+const API_ESQUEMA = '/webhook/pas360-esquema';
+const LIMIT = 12;
+
+let offset = 0;
+let totalActual = 0;
+let filtroSector = '';
+let filtroDesenlace = '';
+let filtroImputacion = '';
+let resolucionActual = null; // {id, numero_resolucion}
+let historialChat = [];
+let mermaidListo = false;
+
+// ---------- tema claro/oscuro ----------
+function aplicarTema(tema) {
+  document.documentElement.setAttribute('data-theme', tema);
+  try { localStorage.setItem('pas360-tema', tema); } catch (e) { /* almacenamiento no disponible */ }
+  const btn = document.getElementById('toggle-tema');
+  if (btn) btn.textContent = tema === 'light' ? 'Oscuro' : 'Claro';
+}
+
+function iniciarTema() {
+  let guardado = null;
+  try { guardado = localStorage.getItem('pas360-tema'); } catch (e) { /* ignorar */ }
+  if (guardado === 'light' || guardado === 'dark') {
+    aplicarTema(guardado);
+  } else {
+    const prefiereClaro = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    aplicarTema(prefiereClaro ? 'light' : 'dark');
+  }
+}
+
+function alternarTema() {
+  const actual = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  aplicarTema(actual === 'light' ? 'dark' : 'light');
+}
+
+function etiquetasDesenlace(r) {
+  const out = [];
+  if (r.desenlace_confirma) out.push('<span class="etiqueta confirma">Confirma</span>');
+  if (r.desenlace_revoca) out.push('<span class="etiqueta revoca">Revoca</span>');
+  if (r.desenlace_reforma) out.push('<span class="etiqueta reforma">Reforma</span>');
+  if (r.desenlace_nulidad) out.push('<span class="etiqueta nulidad">Nulidad</span>');
+  if (r.desenlace_archivo) out.push('<span class="etiqueta archivo">Archivo</span>');
+  if (r.cita_precedente_tfa) out.push('<span class="etiqueta precedente">Cita precedente</span>');
+  return out.join('');
+}
+
+// ---------- chips de filtro ----------
+function iniciarChips() {
+  document.querySelectorAll('.chip[data-grupo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const grupo = btn.dataset.grupo;
+      document.querySelectorAll(`.chip[data-grupo="${grupo}"]`).forEach(b => b.classList.remove('activo'));
+      btn.classList.add('activo');
+      if (grupo === 'sector') filtroSector = btn.dataset.valor;
+      if (grupo === 'desenlace') filtroDesenlace = btn.dataset.valor;
+      if (grupo === 'imputacion') filtroImputacion = btn.dataset.valor;
+      offset = 0;
+      buscar();
+    });
+  });
+}
+
+function construirFiltros() {
+  const body = { limit: LIMIT, offset };
+  const empresa = document.getElementById('f-empresa').value.trim();
+  const anio = document.getElementById('f-anio').value.trim();
+  if (filtroSector) body.sector = filtroSector;
+  if (filtroDesenlace) body[filtroDesenlace] = true;
+  if (filtroImputacion) body[filtroImputacion] = true;
+  if (empresa) body.administrado = empresa;
+  if (anio) body.anio = anio;
+  return body;
+}
+
+async function buscar() {
+  const cont = document.getElementById('lista-resultados');
+  cont.innerHTML = '<p class="vacio">Buscando…</p>';
+  try {
+    const resp = await fetch(API_LISTADO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(construirFiltros()),
+    });
+    const filas = await resp.json();
+    totalActual = filas.length ? Number(filas[0].total_resultados) : 0;
+    renderResultados(filas);
+    renderPaginacion();
+  } catch (e) {
+    cont.innerHTML = '<p class="vacio">No se pudo consultar la base. ¿El backend de n8n está activo?</p>';
+  }
+}
+
+function renderResultados(filas) {
+  const cont = document.getElementById('lista-resultados');
+  document.getElementById('resumen-total').textContent = totalActual
+    ? `${totalActual} resoluciones encontradas`
+    : '';
+  if (!filas.length) {
+    cont.innerHTML = '<p class="vacio">Sin resultados para estos filtros.</p>';
+    return;
+  }
+  cont.innerHTML = filas.map(r => `
+    <div class="tarjeta" data-id="${r.id}">
+      <div>
+        <span class="num">${r.numero_resolucion}${r.administrado ? ' · ' + r.administrado : ''}</span>
+        <p class="sumilla-corta">${(r.sumilla || r.resumen_clasificacion || 'Sin sumilla extraída.').slice(0, 180)}</p>
+      </div>
+      <div class="derecha">
+        <div>${etiquetasDesenlace(r)}</div>
+        <span class="multa">${r.monto_multa_uit != null ? r.monto_multa_uit + ' UIT' : '—'}</span>
+      </div>
+    </div>
+  `).join('');
+  cont.querySelectorAll('.tarjeta').forEach(t => {
+    t.addEventListener('click', () => abrirExpediente(t.dataset.id));
+  });
+}
+
+function renderPaginacion() {
+  const pagina = Math.floor(offset / LIMIT) + 1;
+  const totalPaginas = Math.max(Math.ceil(totalActual / LIMIT), 1);
+  document.getElementById('pag-info').textContent = `Página ${pagina} de ${totalPaginas}`;
+  document.getElementById('btn-prev').disabled = offset === 0;
+  document.getElementById('btn-next').disabled = offset + LIMIT >= totalActual;
+}
+
+// ---------- vista expediente ----------
+async function abrirExpediente(id) {
+  document.getElementById('vista-buscar').style.display = 'none';
+  document.getElementById('vista-expediente').style.display = 'block';
+  window.scrollTo(0, 0);
+  document.getElementById('exp-header').innerHTML = '<p class="vacio">Cargando expediente…</p>';
+  document.getElementById('exp-resumen').innerHTML = '<p class="esquema-cargando">Generando resumen…</p>';
+  document.getElementById('exp-esquema').innerHTML = '<p class="esquema-cargando">Generando esquema…</p>';
+  document.getElementById('exp-secciones').innerHTML = '';
+  document.getElementById('exp-referencias').innerHTML = '';
+  historialChat = [];
+  document.getElementById('chat-mensajes').innerHTML = '<p class="chat-vacio">Pregunta sobre esta resolución: qué se imputó, qué defensa funcionó, con qué otras resoluciones o normas se puede comparar.</p>';
+
+  try {
+    const resp = await fetch(API_DETALLE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const detalle = await resp.json();
+    if (!detalle || !detalle.resolucion) {
+      document.getElementById('exp-header').innerHTML = '<p class="vacio">Esta resolución no está disponible en la base.</p>';
+      document.getElementById('exp-resumen').innerHTML = '';
+      document.getElementById('exp-esquema').innerHTML = '';
+      resolucionActual = null;
+      return;
+    }
+    renderExpediente(detalle);
+    resolucionActual = { id: detalle.resolucion.id, numero_resolucion: detalle.resolucion.numero_resolucion };
+    document.getElementById('chat-subtitulo').textContent = detalle.resolucion.numero_resolucion;
+    cargarEsquema(detalle.resolucion.id);
+  } catch (e) {
+    document.getElementById('exp-header').innerHTML = '<p class="vacio">Error cargando el expediente.</p>';
+    document.getElementById('exp-resumen').innerHTML = '';
+    document.getElementById('exp-esquema').innerHTML = '';
+  }
+}
+
+async function cargarEsquema(id) {
+  const contResumen = document.getElementById('exp-resumen');
+  const contDiagrama = document.getElementById('exp-esquema');
+  try {
+    const resp = await fetch(API_ESQUEMA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolucion_id: id }),
+    });
+    const data = await resp.json();
+
+    const resumen = data.resumen;
+    contResumen.innerHTML = resumen
+      ? resumen.split('\n').filter(p => p.trim()).map(p => `<p>${p.replace(/</g, '&lt;')}</p>`).join('')
+      : '<p class="vacio">No se pudo generar el resumen.</p>';
+
+    const codigo = data.mermaid;
+    if (!codigo) { contDiagrama.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>'; return; }
+    if (!mermaidListo && window.mermaid) {
+      const tema = document.documentElement.getAttribute('data-theme') === 'light' ? 'neutral' : 'dark';
+      window.mermaid.initialize({ startOnLoad: false, theme: tema, fontFamily: 'Plus Jakarta Sans, sans-serif' });
+      mermaidListo = true;
+    }
+    if (!window.mermaid) { contDiagrama.innerHTML = '<p class="vacio">No se pudo cargar el motor de diagramas.</p>'; return; }
+    const idSvg = 'mermaid-' + Date.now();
+    const { svg } = await window.mermaid.render(idSvg, codigo);
+    contDiagrama.innerHTML = `<div class="esquema-contenedor">${svg}</div>`;
+  } catch (e) {
+    contResumen.innerHTML = '<p class="vacio">No se pudo generar el resumen.</p>';
+    contDiagrama.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>';
+  }
+}
+
+function volverABuscar() {
+  document.getElementById('vista-expediente').style.display = 'none';
+  document.getElementById('vista-buscar').style.display = 'block';
+  resolucionActual = null;
+}
+
+function renderExpediente(detalle) {
+  const r = detalle.resolucion || {};
+  document.getElementById('exp-header').innerHTML = `
+    <span class="num-grande">${r.numero_resolucion || ''}</span>
+    <h2>${r.administrado || 'Administrado no identificado'}</h2>
+    <p class="meta">Exp. ${r.expediente || '—'} · ${(r.sector || '').toLowerCase()} · ${etiquetasDesenlace(r)}</p>
+    ${r.sumilla ? `<p class="sumilla">${r.sumilla}</p>` : ''}
+  `;
+
+  const secciones = (detalle.secciones || []).map(s => `
+    <details class="seccion-doc">
+      <summary>${s.titulo}</summary>
+      <div class="contenido">${(s.contenido || '').replace(/</g, '&lt;')}</div>
+    </details>
+  `).join('');
+  document.getElementById('exp-secciones').innerHTML = secciones || '<p class="vacio">Sin secciones parseadas.</p>';
+
+  const referencias = (detalle.referencias || []).map(ref => {
+    const esTfa = /TFA/i.test(ref.numero_citado || '');
+    if (esTfa) {
+      return `<li class="anclada" data-numero="${(ref.numero_citado || '').replace(/"/g, '&quot;')}">
+        <span class="tipo">${ref.tipo_documento || ''}</span>
+        <span class="numero">${ref.numero_citado}</span>
+        <span class="flecha">Ver expediente &rarr;</span>
+      </li>`;
+    }
+    return `<li><span class="tipo">${ref.tipo_documento || ''}</span>${ref.numero_citado}</li>`;
+  }).join('');
+  document.getElementById('exp-referencias').innerHTML = referencias || '<li class="vacio">Sin referencias detectadas.</li>';
+  document.querySelectorAll('#exp-referencias li.anclada').forEach(li => {
+    li.addEventListener('click', () => abrirExpediente(li.dataset.numero));
+  });
+}
+
+// ---------- chat ----------
+function mdLigero(texto) {
+  const esc = (texto || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const lineas = esc.split('\n');
+  let html = '';
+  let enLista = false;
+  for (const linea of lineas) {
+    const l = linea.trim();
+    if (/^#{1,3}\s+/.test(l)) {
+      if (enLista) { html += '</ul>'; enLista = false; }
+      html += `<p><strong>${l.replace(/^#{1,3}\s+/, '')}</strong></p>`;
+    } else if (/^[-*]\s+/.test(l)) {
+      if (!enLista) { html += '<ul>'; enLista = true; }
+      html += `<li>${l.replace(/^[-*]\s+/, '')}</li>`;
+    } else if (l === '') {
+      if (enLista) { html += '</ul>'; enLista = false; }
+    } else {
+      if (enLista) { html += '</ul>'; enLista = false; }
+      html += `<p>${l}</p>`;
+    }
+  }
+  if (enLista) html += '</ul>';
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return html || `<p>${esc}</p>`;
+}
+
+function agregarMensaje(rol, texto, cargando) {
+  const cont = document.getElementById('chat-mensajes');
+  const vacio = cont.querySelector('.chat-vacio');
+  if (vacio) vacio.remove();
+  const div = document.createElement('div');
+  if (cargando) {
+    div.className = 'msg cargando';
+    div.textContent = 'Consultando el expediente, precedentes y normativa ambiental…';
+  } else if (rol === 'usuario') {
+    div.className = 'msg usuario';
+    div.textContent = texto;
+  } else {
+    div.className = 'msg asistente';
+    div.innerHTML = '<div class="cabecera-asistente">Análisis</div>' + mdLigero(texto);
+  }
+  cont.appendChild(div);
+  cont.scrollTop = cont.scrollHeight;
+  return div;
+}
+
+async function enviarPregunta() {
+  if (!resolucionActual) return;
+  const ta = document.getElementById('chat-texto');
+  const pregunta = ta.value.trim();
+  if (!pregunta) return;
+  ta.value = '';
+  document.getElementById('chat-enviar').disabled = true;
+
+  agregarMensaje('usuario', pregunta);
+  const nodoCargando = agregarMensaje(null, null, true);
+
+  try {
+    const resp = await fetch(API_CHAT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        resolucion_id: resolucionActual.id,
+        pregunta,
+        historial: historialChat,
+      }),
+    });
+    const data = await resp.json();
+    nodoCargando.remove();
+    const respuesta = data.respuesta || 'No se obtuvo respuesta.';
+    agregarMensaje('asistente', respuesta);
+    historialChat.push({ rol: 'usuario', texto: pregunta });
+    historialChat.push({ rol: 'asistente', texto: respuesta });
+    if (historialChat.length > 12) historialChat = historialChat.slice(-12);
+  } catch (e) {
+    nodoCargando.remove();
+    agregarMensaje('asistente', 'No se pudo consultar el asistente. Intenta de nuevo en unos segundos.');
+  } finally {
+    document.getElementById('chat-enviar').disabled = false;
+  }
+}
+
+// ---------- inicio ----------
+function iniciar() {
+  iniciarTema();
+  iniciarChips();
+
+  document.getElementById('toggle-tema').addEventListener('click', alternarTema);
+  document.getElementById('btn-buscar').addEventListener('click', () => { offset = 0; buscar(); });
+  document.getElementById('f-empresa').addEventListener('keydown', (e) => { if (e.key === 'Enter') { offset = 0; buscar(); } });
+  document.getElementById('f-anio').addEventListener('keydown', (e) => { if (e.key === 'Enter') { offset = 0; buscar(); } });
+  document.getElementById('btn-prev').addEventListener('click', () => { offset = Math.max(offset - LIMIT, 0); buscar(); });
+  document.getElementById('btn-next').addEventListener('click', () => { offset += LIMIT; buscar(); });
+  document.getElementById('btn-volver').addEventListener('click', volverABuscar);
+  document.getElementById('chat-enviar').addEventListener('click', enviarPregunta);
+  document.getElementById('chat-texto').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarPregunta(); }
+  });
+  document.getElementById('chat-texto').addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  buscar();
+}
+
+document.addEventListener('DOMContentLoaded', iniciar);
+</script>
 </body>
 </html>
