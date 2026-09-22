@@ -25,8 +25,7 @@ import pdfplumber
 import requests
 
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL") or (
-    "https://n8n-digitalocean.ai-salva.com/webhook/"
-    "3c736f0e-4a1e-4c31-be49-950bc921a578/pas360-resolucion"
+    "https://n8n-digitalocean.ai-salva.com/webhook/pas360-resolucion"
 )
 MAX_RESOLUCIONES = int(os.environ.get("MAX_RESOLUCIONES", "25"))
 MAX_PAGINAS = int(os.environ.get("MAX_PAGINAS", "60"))
