@@ -1,14 +1,17 @@
 const API_LISTADO = '/webhook/pas360-listado';
 const API_DETALLE = '/webhook/pas360-detalle';
 const API_CHAT = '/webhook/pas360-chat';
+const API_ESQUEMA = '/webhook/pas360-esquema';
 const LIMIT = 12;
 
 let offset = 0;
 let totalActual = 0;
 let filtroSector = '';
 let filtroDesenlace = '';
+let filtroImputacion = '';
 let resolucionActual = null; // {id, numero_resolucion}
 let historialChat = [];
+let mermaidListo = false;
 
 // ---------- tema claro/oscuro ----------
 function aplicarTema(tema) {
@@ -54,6 +57,7 @@ function iniciarChips() {
       btn.classList.add('activo');
       if (grupo === 'sector') filtroSector = btn.dataset.valor;
       if (grupo === 'desenlace') filtroDesenlace = btn.dataset.valor;
+      if (grupo === 'imputacion') filtroImputacion = btn.dataset.valor;
       offset = 0;
       buscar();
     });
@@ -62,13 +66,13 @@ function iniciarChips() {
 
 function construirFiltros() {
   const body = { limit: LIMIT, offset };
-  const texto = document.getElementById('f-texto').value.trim();
+  const empresa = document.getElementById('f-empresa').value.trim();
+  const anio = document.getElementById('f-anio').value.trim();
   if (filtroSector) body.sector = filtroSector;
   if (filtroDesenlace) body[filtroDesenlace] = true;
-  if (texto) {
-    if (/^\d{2,4}-\d{4}/.test(texto)) body.numero_resolucion = texto;
-    else body.q = texto;
-  }
+  if (filtroImputacion) body[filtroImputacion] = true;
+  if (empresa) body.administrado = empresa;
+  if (anio) body.anio = anio;
   return body;
 }
 
@@ -130,7 +134,7 @@ async function abrirExpediente(id) {
   document.getElementById('vista-expediente').style.display = 'block';
   window.scrollTo(0, 0);
   document.getElementById('exp-header').innerHTML = '<p class="vacio">Cargando expediente…</p>';
-  document.getElementById('exp-esquema').innerHTML = '';
+  document.getElementById('exp-esquema').innerHTML = '<p class="esquema-cargando">Generando esquema…</p>';
   document.getElementById('exp-secciones').innerHTML = '';
   document.getElementById('exp-referencias').innerHTML = '';
   historialChat = [];
@@ -143,11 +147,44 @@ async function abrirExpediente(id) {
       body: JSON.stringify({ id }),
     });
     const detalle = await resp.json();
+    if (!detalle || !detalle.resolucion) {
+      document.getElementById('exp-header').innerHTML = '<p class="vacio">Esta resolución no está disponible en la base.</p>';
+      document.getElementById('exp-esquema').innerHTML = '';
+      resolucionActual = null;
+      return;
+    }
     renderExpediente(detalle);
     resolucionActual = { id: detalle.resolucion.id, numero_resolucion: detalle.resolucion.numero_resolucion };
     document.getElementById('chat-subtitulo').textContent = detalle.resolucion.numero_resolucion;
+    cargarEsquema(detalle.resolucion.id);
   } catch (e) {
     document.getElementById('exp-header').innerHTML = '<p class="vacio">Error cargando el expediente.</p>';
+    document.getElementById('exp-esquema').innerHTML = '';
+  }
+}
+
+async function cargarEsquema(id) {
+  const cont = document.getElementById('exp-esquema');
+  try {
+    const resp = await fetch(API_ESQUEMA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolucion_id: id }),
+    });
+    const data = await resp.json();
+    const codigo = data.mermaid;
+    if (!codigo) { cont.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>'; return; }
+    if (!mermaidListo && window.mermaid) {
+      const tema = document.documentElement.getAttribute('data-theme') === 'light' ? 'neutral' : 'dark';
+      window.mermaid.initialize({ startOnLoad: false, theme: tema, fontFamily: 'Plus Jakarta Sans, sans-serif' });
+      mermaidListo = true;
+    }
+    if (!window.mermaid) { cont.innerHTML = '<p class="vacio">No se pudo cargar el motor de diagramas.</p>'; return; }
+    const idSvg = 'mermaid-' + Date.now();
+    const { svg } = await window.mermaid.render(idSvg, codigo);
+    cont.innerHTML = `<div class="esquema-contenedor">${svg}</div>`;
+  } catch (e) {
+    cont.innerHTML = '<p class="vacio">No se pudo generar el esquema.</p>';
   }
 }
 
@@ -166,27 +203,6 @@ function renderExpediente(detalle) {
     ${r.sumilla ? `<p class="sumilla">${r.sumilla}</p>` : ''}
   `;
 
-  const pasos = [];
-  pasos.push({ titulo: '1ª instancia', texto: r.apelacion_resolucion ? `<span class="num-doc">${r.apelacion_resolucion}</span><br>Resolución Directoral (DFAI)` : 'No identificada en el texto.', activo: !!r.apelacion_resolucion });
-  pasos.push({ titulo: 'Procedencia', texto: r.procedencia || 'No especificada.', activo: !!r.procedencia });
-  let desenlaceTxt = 'Sin desenlace detectado.';
-  if (r.desenlace_confirma) desenlaceTxt = 'TFA confirma la responsabilidad.';
-  else if (r.desenlace_revoca) desenlaceTxt = 'TFA revoca lo resuelto en 1ª instancia.';
-  else if (r.desenlace_reforma) desenlaceTxt = 'TFA reforma (modifica) el monto o extremo sancionado.';
-  else if (r.desenlace_nulidad) desenlaceTxt = 'TFA declara la nulidad y retrotrae el procedimiento.';
-  else if (r.desenlace_archivo) desenlaceTxt = 'Procedimiento archivado.';
-  pasos.push({ titulo: 'Apelación · TFA', texto: `<span class="num-doc">${r.numero_resolucion || ''}</span><br>${desenlaceTxt}`, activo: true });
-  pasos.push({ titulo: 'Multa', texto: r.monto_multa_uit != null ? `${r.monto_multa_uit} UIT` : 'No se detectó monto.', activo: r.monto_multa_uit != null });
-
-  document.getElementById('exp-esquema').innerHTML = pasos.map(p => `
-    <div class="paso ${p.activo ? 'activo' : ''}">
-      <div class="punto"></div>
-      <div class="linea"></div>
-      <span class="etiqueta-paso">${p.titulo}</span>
-      <div class="contenido-paso">${p.texto}</div>
-    </div>
-  `).join('');
-
   const secciones = (detalle.secciones || []).map(s => `
     <details class="seccion-doc">
       <summary>${s.titulo}</summary>
@@ -195,10 +211,21 @@ function renderExpediente(detalle) {
   `).join('');
   document.getElementById('exp-secciones').innerHTML = secciones || '<p class="vacio">Sin secciones parseadas.</p>';
 
-  const referencias = (detalle.referencias || []).map(ref => `
-    <li><span class="tipo">${ref.tipo_documento || ''}</span>${ref.numero_citado}</li>
-  `).join('');
+  const referencias = (detalle.referencias || []).map(ref => {
+    const esTfa = /TFA/i.test(ref.numero_citado || '');
+    if (esTfa) {
+      return `<li class="anclada" data-numero="${(ref.numero_citado || '').replace(/"/g, '&quot;')}">
+        <span class="tipo">${ref.tipo_documento || ''}</span>
+        <span class="numero">${ref.numero_citado}</span>
+        <span class="flecha">Ver expediente &rarr;</span>
+      </li>`;
+    }
+    return `<li><span class="tipo">${ref.tipo_documento || ''}</span>${ref.numero_citado}</li>`;
+  }).join('');
   document.getElementById('exp-referencias').innerHTML = referencias || '<li class="vacio">Sin referencias detectadas.</li>';
+  document.querySelectorAll('#exp-referencias li.anclada').forEach(li => {
+    li.addEventListener('click', () => abrirExpediente(li.dataset.numero));
+  });
 }
 
 // ---------- chat ----------
@@ -290,7 +317,8 @@ function iniciar() {
 
   document.getElementById('toggle-tema').addEventListener('click', alternarTema);
   document.getElementById('btn-buscar').addEventListener('click', () => { offset = 0; buscar(); });
-  document.getElementById('f-texto').addEventListener('keydown', (e) => { if (e.key === 'Enter') { offset = 0; buscar(); } });
+  document.getElementById('f-empresa').addEventListener('keydown', (e) => { if (e.key === 'Enter') { offset = 0; buscar(); } });
+  document.getElementById('f-anio').addEventListener('keydown', (e) => { if (e.key === 'Enter') { offset = 0; buscar(); } });
   document.getElementById('btn-prev').addEventListener('click', () => { offset = Math.max(offset - LIMIT, 0); buscar(); });
   document.getElementById('btn-next').addEventListener('click', () => { offset += LIMIT; buscar(); });
   document.getElementById('btn-volver').addEventListener('click', volverABuscar);

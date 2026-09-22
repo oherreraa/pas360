@@ -8,8 +8,9 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%2315130f'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23e08a3c' font-family='Georgia,serif'%3E360%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
   /* Fija el tema ANTES del primer paint para evitar parpadeo (FOUC) al cargar. */
   (function () {
@@ -46,10 +47,28 @@
 
     <div class="selector">
       <div class="fila">
-        <label class="rotulo">Sector</label>
+        <label class="rotulo">Tipo de imputación</label>
+        <button class="chip activo" data-grupo="imputacion" data-valor="">Todas</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_vertimiento">Vertimiento de efluentes</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_emisiones">Emisiones atmosféricas</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_residuos">Residuos sólidos</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_derrame">Derrame / fuga</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_incumplimiento_iga">Instrumento de gestión ambiental</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_monitoreo">Monitoreo ambiental</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_lmp_eca">LMP / ECA</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_contingencias">Plan de contingencias</button>
+      </div>
+      <div class="fila">
+        <label class="rotulo">Rubro</label>
         <button class="chip activo" data-grupo="sector" data-valor="">Todos</button>
         <button class="chip" data-grupo="sector" data-valor="HIDROCARBUROS">Hidrocarburos</button>
         <button class="chip" data-grupo="sector" data-valor="INDUSTRIA">Industria</button>
+      </div>
+      <div class="fila">
+        <label class="rotulo">Empresa</label>
+        <div class="campo-busqueda">
+          <input type="text" id="f-empresa" placeholder="ej. Petroperú, Zeta Gas Andino…" />
+        </div>
       </div>
       <div class="fila">
         <label class="rotulo">Desenlace</label>
@@ -60,11 +79,11 @@
         <button class="chip" data-grupo="desenlace" data-valor="desenlace_archivo">Archivo</button>
       </div>
       <div class="fila">
-        <label class="rotulo">Empresa, N.° de resolución o palabra clave (ej. "vertimiento", "subsanación")</label>
-        <div class="campo-busqueda">
-          <input type="text" id="f-texto" placeholder="ej. Petroperú, 478-2026, vertimiento de residuos…" />
-          <button class="primario" id="btn-buscar">Buscar</button>
+        <label class="rotulo">Año</label>
+        <div class="campo-busqueda" style="max-width:160px;">
+          <input type="text" id="f-anio" placeholder="ej. 2026" inputmode="numeric" maxlength="4" />
         </div>
+        <button class="primario" id="btn-buscar">Buscar</button>
       </div>
     </div>
 
@@ -84,7 +103,10 @@
     <button class="btn-volver" id="btn-volver">&larr; Volver a la búsqueda</button>
 
     <div class="exp-header" id="exp-header"></div>
-    <div class="esquema" id="exp-esquema"></div>
+    <div class="esquema">
+      <div class="esquema-cabecera">Recorrido del procedimiento</div>
+      <div id="exp-esquema"><p class="esquema-cargando">Generando esquema…</p></div>
+    </div>
 
     <div class="exp-cuerpo">
       <div class="documento">

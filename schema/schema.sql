@@ -50,6 +50,19 @@ CREATE TABLE IF NOT EXISTS resoluciones (
     defensa_falta_competencia              BOOLEAN,
     defensa_indefension                    BOOLEAN,  -- vulneración al derecho de defensa
 
+    -- Tipo de imputación / conducta infractora (detectado en todo el texto;
+    -- una resolución puede tener varias conductas de distinto tipo, así que
+    -- no son mutuamente excluyentes -- ver CLAUDE.md, la unidad real es el
+    -- cargo, esto es una señal a nivel resolución)
+    imputacion_vertimiento        BOOLEAN,  -- vertimiento de efluentes / aguas residuales
+    imputacion_emisiones          BOOLEAN,  -- emisiones atmosféricas / calidad del aire
+    imputacion_residuos           BOOLEAN,  -- manejo/disposición de residuos sólidos o peligrosos
+    imputacion_derrame            BOOLEAN,  -- derrame o fuga de hidrocarburos, contaminación de suelo
+    imputacion_incumplimiento_iga BOOLEAN,  -- incumplimiento de instrumento de gestión ambiental (EIA/PAMA/PMA)
+    imputacion_monitoreo          BOOLEAN,  -- incumplimiento de monitoreo/reporte ambiental
+    imputacion_lmp_eca            BOOLEAN,  -- excede límites máximos permisibles / estándares de calidad ambiental
+    imputacion_contingencias      BOOLEAN,  -- falta de plan de contingencias / respuesta a emergencias
+
     cita_precedente_tfa       BOOLEAN,         -- cita >=1 resolución TFA como precedente
     administrado_en_liquidacion BOOLEAN,
     monto_multa_uit           NUMERIC,
