@@ -788,7 +788,6 @@ function renderExpediente(detalle) {
     <span class="num-grande">${r.numero_resolucion || ''}</span>
     <h2>${r.administrado || 'Administrado no identificado'}</h2>
     <p class="meta">Exp. ${r.expediente || '—'} · ${(r.sector || '').toLowerCase()} · ${etiquetasDesenlace(r)}</p>
-    ${r.sumilla ? `<p class="sumilla">${r.sumilla}</p>` : ''}
   `;
 
   const secciones = (detalle.secciones || []).map(s => `
