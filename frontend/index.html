@@ -4110,21 +4110,22 @@ footer.pie .autor{
     <div class="selector">
       <div class="fila">
         <label class="rotulo">Tipo de imputación</label>
-        <button class="chip activo" data-grupo="imputacion" data-valor="">Todas</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_vertimiento">Vertimiento de efluentes</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_emisiones">Emisiones atmosféricas</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_residuos">Residuos sólidos</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_derrame">Derrame / fuga</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_incumplimiento_iga">Instrumento de gestión ambiental</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_monitoreo">Monitoreo ambiental</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_lmp_eca">LMP / ECA</button>
-        <button class="chip" data-grupo="imputacion" data-valor="imputacion_contingencias">Plan de contingencias</button>
+        <button class="chip activo" data-grupo="imputacion" data-valor="" title="Ver resoluciones de cualquier tipo de infracción">Todas</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_vertimiento" title="Vertimiento de efluentes o aguas residuales sin el tratamiento debido">Vertimiento de efluentes</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_emisiones" title="Emisiones atmosféricas que exceden lo permitido: gases, material particulado, etc.">Emisiones atmosféricas</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_residuos" title="Manejo o disposición inadecuada de residuos sólidos o peligrosos">Residuos sólidos</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_derrame" title="Derrame o fuga de hidrocarburos u otra sustancia, con contaminación del suelo">Derrame / fuga</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_incumplimiento_iga" title="Incumplimiento del instrumento de gestión ambiental aprobado: EIA, PAMA, PMA">Instrumento de gestión ambiental</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_monitoreo" title="Incumplimiento de obligaciones de monitoreo o reporte ambiental">Monitoreo ambiental</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_lmp_eca" title="Exceso de Límites Máximos Permisibles (LMP) o Estándares de Calidad Ambiental (ECA)">LMP / ECA</button>
+        <button class="chip" data-grupo="imputacion" data-valor="imputacion_contingencias" title="Falta o deficiencia del plan de contingencias ante emergencias ambientales">Plan de contingencias</button>
       </div>
       <div class="fila">
         <label class="rotulo">Rubro</label>
-        <button class="chip activo" data-grupo="sector" data-valor="">Todos</button>
-        <button class="chip" data-grupo="sector" data-valor="HIDROCARBUROS">Hidrocarburos</button>
-        <button class="chip" data-grupo="sector" data-valor="INDUSTRIA">Industria</button>
+        <button class="chip activo" data-grupo="sector" data-valor="" title="Ver resoluciones de cualquier rubro">Todos</button>
+        <button class="chip" data-grupo="sector" data-valor="HIDROCARBUROS" title="Exploración, producción, transporte o comercialización de hidrocarburos">Hidrocarburos</button>
+        <button class="chip" data-grupo="sector" data-valor="INDUSTRIA" title="Actividades industriales y manufactureras">Industria</button>
+        <button class="chip" data-grupo="sector" data-valor="ELECTRICIDAD" title="Generación, transmisión o distribución eléctrica">Electricidad</button>
       </div>
       <div class="fila">
         <label class="rotulo">Empresa</label>
@@ -4135,11 +4136,11 @@ footer.pie .autor{
       </div>
       <div class="fila">
         <label class="rotulo">Desenlace</label>
-        <button class="chip activo" data-grupo="desenlace" data-valor="">Cualquiera</button>
-        <button class="chip" data-grupo="desenlace" data-valor="desenlace_confirma">Confirmada</button>
-        <button class="chip" data-grupo="desenlace" data-valor="apelacion_exitosa">Revocada / reformada</button>
-        <button class="chip" data-grupo="desenlace" data-valor="desenlace_nulidad">Nulidad</button>
-        <button class="chip" data-grupo="desenlace" data-valor="desenlace_archivo">Archivo</button>
+        <button class="chip activo" data-grupo="desenlace" data-valor="" title="Ver resoluciones con cualquier desenlace">Cualquiera</button>
+        <button class="chip" data-grupo="desenlace" data-valor="desenlace_confirma" title="El TFA confirmó la decisión de primera instancia (DFAI)">Confirmada</button>
+        <button class="chip" data-grupo="desenlace" data-valor="apelacion_exitosa" title="El TFA revocó o modificó a favor del administrado, total o parcialmente">Revocada / reformada</button>
+        <button class="chip" data-grupo="desenlace" data-valor="desenlace_nulidad" title="El TFA declaró la nulidad de la resolución apelada">Nulidad</button>
+        <button class="chip" data-grupo="desenlace" data-valor="desenlace_archivo" title="El procedimiento fue archivado">Archivo</button>
       </div>
       <div class="fila">
         <label class="rotulo">Año</label>
