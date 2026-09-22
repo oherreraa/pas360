@@ -107,8 +107,18 @@ def procesar_resolucion(detalle_href: str):
         print(f"  sin link de PDF en {detalle_url}, se omite")
         return None
 
-    pdf_bytes = fetch_pdf(pdf_url)
-    texto = extract_text(pdf_bytes)
+    # El PDF descargado a veces llega truncado/corrupto ("No /Root object",
+    # "Unexpected EOF") -- visto en la corrida nocturna, siempre en
+    # resoluciones antiguas (2015-2016). Un segundo intento normalmente
+    # basta, así que no vale la pena descartar la resolución por esto solo.
+    try:
+        pdf_bytes = fetch_pdf(pdf_url)
+        texto = extract_text(pdf_bytes)
+    except Exception as exc:  # noqa: BLE001
+        print(f"  PDF corrupto en primer intento ({exc}), reintentando: {pdf_url}")
+        time.sleep(2)
+        pdf_bytes = fetch_pdf(pdf_url)
+        texto = extract_text(pdf_bytes)
 
     sector_match = SECTOR_RE.search(texto)
     sector = sector_match.group(1).strip() if sector_match else None
@@ -158,6 +168,29 @@ def main() -> None:
         ok = enviar_lote(lote)
         print(f"  lote de {len(lote)} {'enviado a n8n' if ok else 'FALLÓ tras reintentos (queda en resultados.json)'}")
         lote.clear()
+
+    # Modo reintento dirigido: HREFS_EXTRA = lista de detail-hrefs separados
+    # por coma (los que fallaron en una corrida anterior), sin recorrer el
+    # listado de páginas. Ej: HREFS_EXTRA="/institucion/oefa/informes-publicaciones/1366417-..."
+    hrefs_extra = os.environ.get("HREFS_EXTRA", "").strip()
+    if hrefs_extra:
+        for href in [h.strip() for h in hrefs_extra.split(",") if h.strip()]:
+            try:
+                resolucion = procesar_resolucion(href)
+            except Exception as exc:  # noqa: BLE001
+                print(f"  error procesando {href}: {exc}")
+                continue
+            if resolucion is None:
+                continue
+            recolectadas += 1
+            lote.append(resolucion)
+            todas.append(resolucion)
+            print(f"  [{recolectadas}] {resolucion.get('numero_resolucion')} ({resolucion.get('sector')}) -> en lote")
+        despachar_lote()
+        with open("resultados.json", "w", encoding="utf-8") as f:
+            json.dump(todas, f, ensure_ascii=False, indent=2)
+        print(f"\nTotal recolectadas: {recolectadas}")
+        return
 
     for pagina in range(START_PAGINA, START_PAGINA + MAX_PAGINAS):
         if recolectadas >= MAX_RESOLUCIONES:
