@@ -33,9 +33,17 @@ HEADERS = {
 }
 
 RESOLUCION_RE = re.compile(
-    r"RESOLUCI[ÓO]N\s+N[°ºO.]*\s*([\d]+-\d{4}-OEFA[\w/\-]*)", re.IGNORECASE
+    r"RESOLUCI[ÓO]N\s+N[°ºO.]*\s*:?\s*([\d]+-\d{4}-OEFA[\w/\-]*)", re.IGNORECASE
 )
-EXPEDIENTE_RE = re.compile(r"EXPEDIENTE\s+N[°ºO.]*\s*([\w./\-]+)", re.IGNORECASE)
+EXPEDIENTE_RE = re.compile(r"EXPEDIENTE\s+N[°ºO.]*\s*:?\s*([\w./\-]+)", re.IGNORECASE)
+SECTOR_RE = re.compile(r"SECTOR\s*:?\s*([A-ZÁÉÍÓÚÑ ]+)")
+
+# El sector solo se puede leer del texto completo del PDF (no está en el
+# HTML liviano del listado ni de la página de detalle -- confirmado con
+# Range requests, que fallan porque el PDF no está linearizado para web).
+# Por eso el PDF se descarga completo y, si el sector no aplica, se
+# descarta aquí mismo sin guardar la ficha ni el archivo.
+SECTORES_EN_ALCANCE = {"HIDROCARBUROS", "INDUSTRIA"}
 
 
 def fetch(url: str) -> bytes:
@@ -61,16 +69,36 @@ def main() -> None:
 
     resolucion_match = RESOLUCION_RE.search(texto)
     expediente_match = EXPEDIENTE_RE.search(texto)
+    sector_match_pdf = SECTOR_RE.search(texto)
+    sector_match_detalle = SECTOR_RE.search(detalle_html.upper())
+
+    sector = sector_match_pdf.group(1).strip() if sector_match_pdf else None
+    en_alcance = sector in SECTORES_EN_ALCANCE
+
+    pdf_links_en_detalle = re.findall(r'href="([^"]+\.pdf[^"]*)"', detalle_html)
 
     resultado = {
         "url_pdf": PDF_URL,
         "url_detalle": DETAIL_URL,
+        "pdf_links_en_detalle": pdf_links_en_detalle,
         "pdf_bytes": len(pdf_bytes),
         "texto_len": len(texto),
         "numero_resolucion": resolucion_match.group(1) if resolucion_match else None,
         "expediente": expediente_match.group(1) if expediente_match else None,
+        "sector_en_pdf": sector,
+        "sector_en_detalle_html": (
+            sector_match_detalle.group(1).strip() if sector_match_detalle else None
+        ),
+        "en_alcance": en_alcance,
+        "detalle_html_bytes": len(detalle_html),
         "texto_preview": texto[:3000],
     }
+
+    if not en_alcance:
+        print(json.dumps(resultado, ensure_ascii=False, indent=2))
+        print(f"DESCARTADO: sector '{sector}' fuera de alcance (hidrocarburos/industria). "
+              "No se persiste el PDF ni la ficha.")
+        return
 
     with open("resultado.json", "w", encoding="utf-8") as f:
         json.dump({**resultado, "texto_completo": texto}, f, ensure_ascii=False, indent=2)

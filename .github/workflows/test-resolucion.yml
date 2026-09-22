@@ -9,6 +9,9 @@ on:
       detail_url:
         description: "URL de la página de publicación (vacío = resolución de prueba)"
         required: false
+      listado_url:
+        description: "URL de la colección/listado (vacío = página de ejemplo)"
+        required: false
 
 jobs:
   extract:
@@ -27,9 +30,14 @@ jobs:
           PDF_URL: ${{ inputs.pdf_url }}
           DETAIL_URL: ${{ inputs.detail_url }}
 
+      - run: python scraper/inspect_listado.py
+        env:
+          LISTADO_URL: ${{ inputs.listado_url }}
+
       - uses: actions/upload-artifact@v4
         with:
           name: resultado-extraccion
           path: |
             resultado.json
             detalle.html
+            listado.html
