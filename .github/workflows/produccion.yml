@@ -34,3 +34,10 @@ jobs:
           MAX_RESOLUCIONES: ${{ inputs.max_resoluciones }}
           START_PAGINA: ${{ inputs.start_pagina }}
           MAX_PAGINAS: ${{ inputs.max_paginas }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-produccion
+          path: resultados.json
+          if-no-files-found: ignore

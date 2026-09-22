@@ -1,14 +1,22 @@
 """Scraper de producción: recorre el listado de resoluciones del TFA,
-filtra por sector (hidrocarburos/industria) y envía cada resolución en
-alcance a n8n vía webhook (inserción simple en `resoluciones`; el
-parseo por secciones y las referencias cruzadas se hacen después, con
+filtra por sector (hidrocarburos/industria) y envía las resoluciones en
+alcance a n8n vía webhook, en lotes (inserción simple en `resoluciones`;
+el parseo por secciones y las referencias cruzadas se hacen después, con
 más ejemplos reales a la vista).
+
+Envía por lotes (no una llamada por resolución) para reducir cuántas
+veces dependemos de que el webhook responda -- un webhook que falla a
+mitad de una corrida larga tumbaba resoluciones ya encontradas antes.
+Cada lote se reintenta unas veces con backoff; si el envío falla de
+todas formas, el resultado completo también queda en resultados.json
+(subido como artifact del job) para no perder el trabajo.
 
 Corre en GitHub Actions. Reintenta el fetch de cada página del listado,
 porque a veces devuelve la página sin los ítems reales aunque responda
 200 (visto en pruebas anteriores).
 """
 
+import json
 import os
 import re
 import time
@@ -23,6 +31,7 @@ N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL") or (
 MAX_RESOLUCIONES = int(os.environ.get("MAX_RESOLUCIONES", "25"))
 MAX_PAGINAS = int(os.environ.get("MAX_PAGINAS", "60"))
 START_PAGINA = int(os.environ.get("START_PAGINA", "1"))
+BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "5"))
 
 BASE_LISTADO = (
     "https://www.gob.pe/institucion/oefa/colecciones/"
@@ -120,14 +129,31 @@ def procesar_resolucion(detalle_href: str):
     }
 
 
-def enviar_a_n8n(resolucion: dict) -> None:
-    resp = requests.post(N8N_WEBHOOK_URL, json=resolucion, timeout=30)
-    resp.raise_for_status()
+def enviar_lote(lote: list[dict], intentos: int = 3) -> bool:
+    for intento in range(1, intentos + 1):
+        try:
+            resp = requests.post(N8N_WEBHOOK_URL, json={"items": lote}, timeout=60)
+            resp.raise_for_status()
+            return True
+        except Exception as exc:  # noqa: BLE001
+            print(f"  intento {intento}/{intentos} enviando lote de {len(lote)}: {exc}")
+            if intento < intentos:
+                time.sleep(2**intento)
+    return False
 
 
 def main() -> None:
     recolectadas = 0
     vistos = set()
+    lote: list[dict] = []
+    todas: list[dict] = []
+
+    def despachar_lote():
+        if not lote:
+            return
+        ok = enviar_lote(lote)
+        print(f"  lote de {len(lote)} {'enviado a n8n' if ok else 'FALLÓ tras reintentos (queda en resultados.json)'}")
+        lote.clear()
 
     for pagina in range(START_PAGINA, START_PAGINA + MAX_PAGINAS):
         if recolectadas >= MAX_RESOLUCIONES:
@@ -154,18 +180,21 @@ def main() -> None:
             if resolucion is None:
                 continue
 
-            try:
-                enviar_a_n8n(resolucion)
-            except Exception as exc:  # noqa: BLE001
-                print(f"  error enviando a n8n {resolucion.get('numero_resolucion')}: {exc}")
-                continue
-
             recolectadas += 1
+            lote.append(resolucion)
+            todas.append(resolucion)
             print(
                 f"  [{recolectadas}/{MAX_RESOLUCIONES}] "
-                f"{resolucion.get('numero_resolucion')} ({resolucion.get('sector')}) -> enviado"
+                f"{resolucion.get('numero_resolucion')} ({resolucion.get('sector')}) -> en lote"
             )
-            time.sleep(0.5)
+
+            if len(lote) >= BATCH_SIZE:
+                despachar_lote()
+
+    despachar_lote()
+
+    with open("resultados.json", "w", encoding="utf-8") as f:
+        json.dump(todas, f, ensure_ascii=False, indent=2)
 
     print(f"\nTotal recolectadas: {recolectadas}")
 
