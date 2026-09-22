@@ -99,7 +99,8 @@ def procesar_resolucion(detalle_href: str):
 
     sector_match = SECTOR_RE.search(texto)
     sector = sector_match.group(1).strip() if sector_match else None
-    if sector not in SECTORES_EN_ALCANCE:
+    en_alcance = sector is not None and any(s in sector for s in SECTORES_EN_ALCANCE)
+    if not en_alcance:
         print(f"  descartado (sector={sector}): {pdf_url}")
         return None
 
