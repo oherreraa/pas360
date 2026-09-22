@@ -20,6 +20,7 @@ import json
 import os
 import re
 import time
+from urllib.parse import unquote
 
 import pdfplumber
 import requests
@@ -90,6 +91,16 @@ def fetch_pdf(pdf_url: str) -> bytes:
     return resp.content
 
 
+def extraer_numero_de_url(pdf_url: str) -> str | None:
+    """Fallback cuando el número de resolución no se puede leer del texto
+    extraído del PDF (visto en resoluciones antiguas 2015-2016 "TFA-SEE",
+    donde el encabezado no sigue el formato regular). El nombre de archivo
+    en la URL del CDN es literalmente "RESOLUCIÓN N° XXX-YYYY-OEFA/...pdf",
+    así que el mismo regex aplicado al path decodificado también sirve."""
+    match = RESOLUCION_RE.search(unquote(pdf_url))
+    return match.group(1) if match else None
+
+
 def extract_text(pdf_bytes: bytes) -> str:
     with open("/tmp/r.pdf", "wb") as f:
         f.write(pdf_bytes)
@@ -131,8 +142,14 @@ def procesar_resolucion(detalle_href: str):
     expediente_match = EXPEDIENTE_RE.search(texto)
     administrado_match = ADMINISTRADO_RE.search(texto)
 
+    numero_resolucion = (
+        resolucion_match.group(1) if resolucion_match else extraer_numero_de_url(pdf_url)
+    )
+    if not numero_resolucion:
+        print(f"  sin número de resolución (ni en texto ni en URL): {pdf_url}")
+
     return {
-        "numero_resolucion": resolucion_match.group(1) if resolucion_match else None,
+        "numero_resolucion": numero_resolucion,
         "expediente": expediente_match.group(1) if expediente_match else None,
         "administrado": administrado_match.group(1).strip() if administrado_match else None,
         "sector": sector,
