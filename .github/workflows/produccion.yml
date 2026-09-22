@@ -1,0 +1,36 @@
+name: Scraper de producción TFA
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_resoluciones:
+        description: "Cuántas resoluciones en alcance recolectar"
+        required: false
+        default: "25"
+      start_pagina:
+        description: "Página del listado por donde empezar"
+        required: false
+        default: "1"
+      max_paginas:
+        description: "Tope de páginas a recorrer (seguridad)"
+        required: false
+        default: "60"
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r scraper/requirements.txt
+
+      - run: python scraper/produccion.py
+        env:
+          MAX_RESOLUCIONES: ${{ inputs.max_resoluciones }}
+          START_PAGINA: ${{ inputs.start_pagina }}
+          MAX_PAGINAS: ${{ inputs.max_paginas }}
