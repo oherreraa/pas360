@@ -62,8 +62,13 @@ ADMINISTRADO_RE = re.compile(r"ADMINISTRADO\s*:?\s*(.+)")
 def fetch_listado_page(pagina: int, intentos: int = 3):
     url = f"{BASE_LISTADO}?sheet={pagina}"
     for intento in range(1, intentos + 1):
-        resp = requests.get(url, headers=HEADERS, timeout=60)
-        resp.raise_for_status()
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=60)
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            print(f"  página {pagina}: intento {intento}/{intentos} falló ({exc}), reintentando...")
+            time.sleep(2)
+            continue
         items = LISTADO_HREF_RE.findall(resp.text)
         if items:
             return items
