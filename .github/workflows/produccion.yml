@@ -19,6 +19,10 @@ on:
         description: "Reintento dirigido: detail-hrefs separados por coma (ignora el resto de inputs)"
         required: false
         default: ""
+      sectores:
+        description: "Sectores en alcance, separados por coma (vacío = default hidrocarburos,industria)"
+        required: false
+        default: ""
 
 jobs:
   scrape:
@@ -39,6 +43,7 @@ jobs:
           START_PAGINA: ${{ inputs.start_pagina }}
           MAX_PAGINAS: ${{ inputs.max_paginas }}
           HREFS_EXTRA: ${{ inputs.hrefs_extra }}
+          SECTORES: ${{ inputs.sectores }}
 
       - uses: actions/upload-artifact@v4
         if: always()

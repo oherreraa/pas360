@@ -111,10 +111,16 @@ CREATE TABLE IF NOT EXISTS cargos (
 
 -- Progreso del scraper nocturno: una sola fila, avanzada atómicamente
 -- por el workflow n8n "PAS360 - Orquestador nocturno" en cada disparo.
+-- pagina_siguiente_electricidad es un contador de progreso separado,
+-- usado por "PAS360 - Orquestador electricidad" para recorrer el mismo
+-- listado TFA filtrando solo por energía/eléctrico (ver CLAUDE.md
+-- "Alcance", confirmado 2026-09-22) sin pisar el progreso del flujo
+-- hidrocarburos/industria.
 CREATE TABLE IF NOT EXISTS scraper_progreso (
-    id               INTEGER PRIMARY KEY DEFAULT 1,
-    pagina_siguiente INTEGER NOT NULL DEFAULT 1,
-    actualizado_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id                             INTEGER PRIMARY KEY DEFAULT 1,
+    pagina_siguiente               INTEGER NOT NULL DEFAULT 1,
+    pagina_siguiente_electricidad  INTEGER NOT NULL DEFAULT 1,
+    actualizado_en                 TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT solo_una_fila CHECK (id = 1)
 );
 INSERT INTO scraper_progreso (id, pagina_siguiente) VALUES (1, 1)

@@ -8,10 +8,12 @@ No es un buscador (eso ya lo tiene OEFA) — es una capa de análisis que convie
 resoluciones sueltas en patrones de defensa y desenlace reutilizables.
 
 ## Alcance
-- Solo sectores **hidrocarburos** e **industria**.
-- **Eléctrico excluido deliberadamente** (conflicto de interés — autor trabaja en
-  generadora eléctrica). No agregar lógica ni datos de ese sector sin confirmación
-  explícita.
+- Sectores **hidrocarburos**, **industria** y, desde 2026-09-22, **energía/eléctrico**.
+- El sector eléctrico estuvo excluido deliberadamente por conflicto de interés
+  (autor trabaja en generadora eléctrica). El autor confirmó explícitamente el
+  2026-09-22 levantar esa exclusión y agregar normativa/resoluciones de
+  energía-electricidad al dataset. Cualquier ampliación adicional de alcance de
+  sector sigue requiriendo confirmación explícita del autor.
 - Motor retrospectivo: solo casos con resolución ya publicada, no PAS en trámite.
 
 ## Fuentes de datos
@@ -66,8 +68,8 @@ filtro por sector antes de descargar.
   extracción de PDF, etc.)
 
 ## No hacer
-- No incluir el sector eléctrico en ningún dataset ni consulta sin confirmación
-  explícita del autor.
+- No incluir sectores nuevos (fuera de hidrocarburos, industria y energía/eléctrico)
+  en ningún dataset ni consulta sin confirmación explícita del autor.
 - No presentar el resultado como "esto garantiza X defensa" — siempre expresar
   tendencias con su tamaño de muestra visible (retrospectivo, no predictivo
   garantizado).

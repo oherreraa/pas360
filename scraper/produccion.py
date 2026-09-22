@@ -1,8 +1,8 @@
 """Scraper de producción: recorre el listado de resoluciones del TFA,
-filtra por sector (hidrocarburos/industria) y envía las resoluciones en
-alcance a n8n vía webhook, en lotes (inserción simple en `resoluciones`;
-el parseo por secciones y las referencias cruzadas se hacen después, con
-más ejemplos reales a la vista).
+filtra por sector (env var SECTORES, default hidrocarburos/industria) y
+envía las resoluciones en alcance a n8n vía webhook, en lotes (inserción
+simple en `resoluciones`; el parseo por secciones y las referencias
+cruzadas se hacen después, con más ejemplos reales a la vista).
 
 Envía por lotes (no una llamada por resolución) para reducir cuántas
 veces dependemos de que el webhook responda -- un webhook que falla a
@@ -20,6 +20,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 from urllib.parse import unquote
 
 import pdfplumber
@@ -46,7 +47,23 @@ HEADERS = {
     "Accept-Language": "es-PE,es;q=0.9",
 }
 
-SECTORES_EN_ALCANCE = {"HIDROCARBUROS", "INDUSTRIA"}
+def _normalizar_sector(texto: str) -> str:
+    """Quita tildes y pasa a mayúsculas, para que 'ELÉCTRICO' y 'ELECTRICO'
+    (o variantes con codificación de tildes distinta en el PDF) matcheen igual."""
+    sin_tildes = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
+    return sin_tildes.upper().strip()
+
+
+# Filtro de sector: configurable vía env var SECTORES (lista separada por
+# comas), default = alcance original (hidrocarburos/industria). Ver
+# CLAUDE.md "Alcance" -- energía/eléctrico se agregó el 2026-09-22 con
+# confirmación explícita del autor, pero el flujo nocturno por defecto NO
+# cambia de alcance solo por esto: cada corrida decide su propio SECTORES.
+SECTORES_EN_ALCANCE = {
+    _normalizar_sector(s)
+    for s in (os.environ.get("SECTORES") or "HIDROCARBUROS,INDUSTRIA").split(",")
+    if s.strip()
+}
 
 LISTADO_HREF_RE = re.compile(
     r'href="(/institucion/oefa/informes-publicaciones/(\d+)-resolucion-[^"]+)"'
@@ -133,7 +150,8 @@ def procesar_resolucion(detalle_href: str):
 
     sector_match = SECTOR_RE.search(texto)
     sector = sector_match.group(1).strip() if sector_match else None
-    en_alcance = sector is not None and any(s in sector for s in SECTORES_EN_ALCANCE)
+    sector_norm = _normalizar_sector(sector) if sector else ""
+    en_alcance = sector is not None and any(s in sector_norm for s in SECTORES_EN_ALCANCE)
     if not en_alcance:
         print(f"  descartado (sector={sector}): {pdf_url}")
         return None
