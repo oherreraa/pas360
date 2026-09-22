@@ -3999,35 +3999,29 @@ button.primario:active{transform:scale(0.98);}
 @keyframes girar{ to { transform:rotate(360deg); } }
 
 .exp-cuerpo{
-  display:grid;
-  grid-template-columns:1fr 400px;
+  display:flex;
+  flex-direction:column;
   gap:2.2rem;
-  align-items:start;
 }
-@media (max-width: 980px){ .exp-cuerpo{grid-template-columns:1fr;} }
 
 .documento h3.subtitulo{
   font-family:var(--mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
   color:var(--ink-faint); margin:2rem 0 0.8rem; border-bottom:1px solid var(--line); padding-bottom:0.5rem;
 }
-.seccion-doc{
-  margin-bottom:0.7rem;
+.documento h3.subtitulo:first-child{margin-top:0;}
+.link-documento{
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
   background:var(--bg-card);
-  border:1px solid var(--line);
-  border-radius:8px;
-  overflow:hidden;
+  border:1px solid var(--line-strong);
+  border-radius:10px;
+  padding:1rem 1.2rem;
+  font-family:var(--sans); font-weight:600; font-size:0.94rem;
+  color:var(--ink);
+  text-decoration:none;
+  transition:border-color 0.15s ease, background 0.15s ease;
 }
-.seccion-doc summary{
-  font-family:var(--sans); font-weight:500; font-size:0.86rem;
-  color:var(--ink); cursor:pointer; padding:0.75rem 1rem; list-style:none;
-  display:flex; align-items:center; justify-content:space-between;
-}
-.seccion-doc summary::-webkit-details-marker{display:none;}
-.seccion-doc summary::after{content:'+'; color:var(--ink-faint); font-family:var(--mono);}
-.seccion-doc[open] summary::after{content:'\2212';}
-.seccion-doc .contenido{
-  font-size:0.86rem; white-space:pre-wrap; padding:0 1rem 1rem; color:var(--ink-soft); line-height:1.6;
-}
+.link-documento:hover{border-color:var(--accent); background:var(--bg-card-hover);}
+.link-documento::after{content:'\2197'; color:var(--accent); font-size:1.1rem;}
 .referencias-lista{list-style:none; padding:0; margin:0; font-size:0.85rem;}
 .referencias-lista li{padding:0.6rem 0; border-bottom:1px solid var(--line);}
 .referencias-lista .tipo{font-family:var(--mono); font-size:0.68rem; color:var(--info); display:block; margin-bottom:0.15rem;}
@@ -4038,12 +4032,11 @@ button.primario:active{transform:scale(0.98);}
 
 /* Chat */
 .chat-panel{
-  position:sticky; top:1.5rem;
   background:var(--bg-raised);
   border:1px solid var(--line);
   border-radius:var(--radius);
   display:flex; flex-direction:column;
-  height:min(640px, 80vh);
+  height:min(560px, 70vh);
 }
 .chat-panel .chat-head{
   padding:1rem 1.2rem;
@@ -4136,7 +4129,8 @@ footer.pie .autor{
       <div class="fila">
         <label class="rotulo">Empresa</label>
         <div class="campo-busqueda">
-          <input type="text" id="f-empresa" placeholder="ej. Petroperú, Zeta Gas Andino…" />
+          <input type="text" id="f-empresa" list="lista-empresas" placeholder="Elige o escribe una empresa registrada…" />
+          <datalist id="lista-empresas"></datalist>
         </div>
       </div>
       <div class="fila">
@@ -4183,8 +4177,8 @@ footer.pie .autor{
 
     <div class="exp-cuerpo">
       <div class="documento">
-        <h3 class="subtitulo">Expediente</h3>
-        <div id="exp-secciones"></div>
+        <h3 class="subtitulo">Documento completo</h3>
+        <div id="exp-documento-link"></div>
         <h3 class="subtitulo">Referencias citadas</h3>
         <ul class="referencias-lista" id="exp-referencias"></ul>
       </div>
@@ -4217,6 +4211,7 @@ const API_LISTADO = '/webhook/pas360-listado';
 const API_DETALLE = '/webhook/pas360-detalle';
 const API_CHAT = '/webhook/pas360-chat';
 const API_ESQUEMA = '/webhook/pas360-esquema';
+const API_EMPRESAS = '/webhook/pas360-empresas';
 const LIMIT = 12;
 
 let offset = 0;
@@ -4343,6 +4338,19 @@ function renderPaginacion() {
   document.getElementById('btn-next').disabled = offset + LIMIT >= totalActual;
 }
 
+// ---------- listado de empresas (dropdown) ----------
+async function cargarEmpresas() {
+  try {
+    const resp = await fetch(API_EMPRESAS);
+    const filas = await resp.json();
+    const datalist = document.getElementById('lista-empresas');
+    datalist.innerHTML = filas
+      .filter(f => f.administrado)
+      .map(f => `<option value="${f.administrado.replace(/"/g, '&quot;')}">${f.administrado} · ${f.total} resoluciones</option>`)
+      .join('');
+  } catch (e) { /* el dropdown es un extra, no bloquea la búsqueda si falla */ }
+}
+
 // ---------- vista expediente ----------
 async function abrirExpediente(id) {
   document.getElementById('vista-buscar').style.display = 'none';
@@ -4351,7 +4359,7 @@ async function abrirExpediente(id) {
   document.getElementById('exp-header').innerHTML = '<p class="vacio">Cargando expediente…</p>';
   document.getElementById('exp-resumen').innerHTML = '<p class="esquema-cargando">Generando resumen…</p>';
   document.getElementById('exp-esquema').innerHTML = '<p class="esquema-cargando">Generando esquema…</p>';
-  document.getElementById('exp-secciones').innerHTML = '';
+  document.getElementById('exp-documento-link').innerHTML = '';
   document.getElementById('exp-referencias').innerHTML = '';
   historialChat = [];
   document.getElementById('chat-mensajes').innerHTML = '<p class="chat-vacio">Pregunta sobre esta resolución: qué se imputó, qué defensa funcionó, con qué otras resoluciones o normas se puede comparar.</p>';
@@ -4428,13 +4436,10 @@ function renderExpediente(detalle) {
     <p class="meta">Exp. ${r.expediente || '—'} · ${(r.sector || '').toLowerCase()} · ${etiquetasDesenlace(r)}</p>
   `;
 
-  const secciones = (detalle.secciones || []).map(s => `
-    <details class="seccion-doc">
-      <summary>${s.titulo}</summary>
-      <div class="contenido">${(s.contenido || '').replace(/</g, '&lt;')}</div>
-    </details>
-  `).join('');
-  document.getElementById('exp-secciones').innerHTML = secciones || '<p class="vacio">Sin secciones parseadas.</p>';
+  const urlDocumento = r.url_pdf || r.url_detalle;
+  document.getElementById('exp-documento-link').innerHTML = urlDocumento
+    ? `<a class="link-documento" href="${urlDocumento.replace(/"/g, '&quot;')}" target="_blank" rel="noopener">Ver resolución completa (PDF)</a>`
+    : '<p class="vacio">No se encontró un enlace al documento original.</p>';
 
   const referencias = (detalle.referencias || []).map(ref => {
     const esTfa = /TFA/i.test(ref.numero_citado || '');
@@ -4556,6 +4561,7 @@ function iniciar() {
     this.style.height = Math.min(this.scrollHeight, 120) + 'px';
   });
 
+  cargarEmpresas();
   buscar();
 }
 
