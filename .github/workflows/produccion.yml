@@ -29,7 +29,7 @@ jobs:
 
       - run: pip install -r scraper/requirements.txt
 
-      - run: python scraper/produccion.py
+      - run: python -u scraper/produccion.py
         env:
           MAX_RESOLUCIONES: ${{ inputs.max_resoluciones }}
           START_PAGINA: ${{ inputs.start_pagina }}
