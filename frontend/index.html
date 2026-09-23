@@ -956,7 +956,7 @@ async function abrirExpediente(id, fuente) {
     renderExpediente(detalle, fuenteConsulta);
     resolucionActual = { id: detalle.resolucion.id, numero_resolucion: detalle.resolucion.numero_resolucion, fuente: fuenteConsulta };
     document.getElementById('chat-subtitulo').textContent = detalle.resolucion.numero_resolucion;
-    cargarEsquema(detalle.resolucion.id);
+    cargarEsquema(detalle.resolucion.id, fuenteConsulta);
   } catch (e) {
     document.getElementById('exp-header').innerHTML = '<p class="vacio">Error cargando el expediente.</p>';
     document.getElementById('exp-resumen').innerHTML = '';
@@ -964,14 +964,14 @@ async function abrirExpediente(id, fuente) {
   }
 }
 
-async function cargarEsquema(id) {
+async function cargarEsquema(id, fuente) {
   const contResumen = document.getElementById('exp-resumen');
   const contDiagrama = document.getElementById('exp-esquema');
   try {
     const data = await solicitarJSON(API_ESQUEMA, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resolucion_id: id }),
+      body: JSON.stringify({ resolucion_id: id, fuente }),
     });
 
     const resumen = data.resumen;
@@ -1103,6 +1103,7 @@ async function enviarPregunta() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         resolucion_id: resolucionActual.id,
+        fuente: resolucionActual.fuente,
         pregunta,
         historial: historialChat,
       }),
