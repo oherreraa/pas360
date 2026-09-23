@@ -1,0 +1,53 @@
+name: Scraper de producción DFAI
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_resoluciones:
+        description: "Cuántas resoluciones en alcance recolectar"
+        required: false
+        default: "25"
+      start_pagina:
+        description: "Página del listado por donde empezar"
+        required: false
+        default: "1"
+      max_paginas:
+        description: "Tope de páginas a recorrer (seguridad)"
+        required: false
+        default: "60"
+      hrefs_extra:
+        description: "Reintento dirigido: detail-hrefs separados por coma (ignora el resto de inputs)"
+        required: false
+        default: ""
+      sectores:
+        description: "Sectores en alcance, separados por coma (vacío = default hidrocarburos,industria)"
+        required: false
+        default: ""
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r scraper/requirements.txt
+
+      - run: python -u scraper/produccion_dfai.py
+        env:
+          MAX_RESOLUCIONES: ${{ inputs.max_resoluciones }}
+          START_PAGINA: ${{ inputs.start_pagina }}
+          MAX_PAGINAS: ${{ inputs.max_paginas }}
+          HREFS_EXTRA: ${{ inputs.hrefs_extra }}
+          SECTORES: ${{ inputs.sectores }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-produccion-dfai
+          path: resultados_dfai.json
+          if-no-files-found: ignore
