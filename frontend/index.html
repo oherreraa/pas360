@@ -239,6 +239,22 @@ header.masthead .kicker{
 }
 .campo-busqueda input:focus{border-color:var(--accent);}
 .campo-busqueda input::placeholder{color:var(--ink-faint);}
+.campo-ubicacion{display:flex; gap:0.5rem; flex-wrap:wrap; width:100%;}
+.campo-ubicacion select{
+  flex:1;
+  min-width:160px;
+  background:var(--bg-card);
+  border:1px solid var(--line-strong);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:0.88rem;
+  padding:0.6rem 0.8rem;
+  border-radius:8px;
+  outline:none;
+  transition:border-color 0.15s ease;
+}
+.campo-ubicacion select:focus{border-color:var(--accent);}
+.campo-ubicacion select:disabled{opacity:0.5; cursor:not-allowed;}
 .campo-empresa{position:relative; min-width:0; width:100%;}
 .campo-empresa input{width:100%; padding-right:2.8rem;}
 .empresa-limpiar{
@@ -652,6 +668,23 @@ a:focus-visible{
         </div>
       </div>
       <div class="fila">
+        <span class="rotulo" id="rotulo-ubicacion">Ubicación</span>
+        <div class="campo-ubicacion">
+          <select id="f-departamento" aria-label="Región" title="Filtra por la región donde ocurrió la fiscalización">
+            <option value="">Región (todas)</option>
+          </select>
+          <select id="f-provincia" aria-label="Provincia" title="Filtra por provincia (elige primero una región)" disabled>
+            <option value="">Provincia (elige región)</option>
+          </select>
+          <select id="f-distrito" aria-label="Distrito" title="Filtra por distrito (elige primero una provincia)" disabled>
+            <option value="">Distrito (elige provincia)</option>
+          </select>
+          <select id="f-sede" aria-label="Unidad fiscalizable / sede" title="Filtra por unidad fiscalizable o sede (elige primero un distrito)" disabled>
+            <option value="">Sede (elige distrito)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fila">
         <span class="rotulo" id="rotulo-desenlace">Desenlace</span>
         <button class="chip activo" data-grupo="desenlace" data-valor="" title="Ver resoluciones con cualquier desenlace">Cualquiera</button>
         <button class="chip" data-grupo="desenlace" data-valor="desenlace_confirma" title="El TFA confirmó la decisión de primera instancia (DFAI)">Confirmada</button>
@@ -748,6 +781,7 @@ const API_CHAT = '/webhook/pas360-chat';
 const API_ESQUEMA = '/webhook/pas360-esquema';
 const API_EMPRESAS = '/webhook/pas360-empresas';
 const API_VISITA = '/webhook/pas360-visita';
+const API_UBICACIONES = '/webhook/pas360-ubicaciones';
 const LIMIT = 12;
 
 let offset = 0;
@@ -756,6 +790,10 @@ let filtroFuente = 'todos';
 let filtroSector = '';
 let filtroDesenlace = '';
 let filtroImputacion = '';
+let filtroDepartamento = '';
+let filtroProvincia = '';
+let filtroDistrito = '';
+let filtroSede = '';
 let filtroSolucion = '';
 let resolucionActual = null; // {id, numero_resolucion, fuente}
 let historialChat = [];
@@ -853,7 +891,7 @@ function iniciarChips() {
       });
       btn.classList.add('activo');
       btn.setAttribute('aria-pressed', 'true');
-      if (grupo === 'fuente') filtroFuente = btn.dataset.valor;
+      if (grupo === 'fuente') { filtroFuente = btn.dataset.valor; actualizarUbicaciones(); }
       if (grupo === 'sector') filtroSector = btn.dataset.valor;
       if (grupo === 'desenlace') filtroDesenlace = btn.dataset.valor;
       if (grupo === 'imputacion') filtroImputacion = btn.dataset.valor;
@@ -874,7 +912,84 @@ function construirFiltros() {
   if (filtroSolucion) body[filtroSolucion] = true;
   if (empresa) body.administrado = empresa;
   if (anio) body.anio = anio;
+  if (filtroDepartamento) body.departamento = filtroDepartamento;
+  if (filtroProvincia) body.provincia = filtroProvincia;
+  if (filtroDistrito) body.distrito = filtroDistrito;
+  if (filtroSede) body.sede = filtroSede;
   return body;
+}
+
+// ---------- ubicación en cascada (región → provincia → distrito → sede) ----------
+async function cargarValoresUbicacion(filtros, campo) {
+  try {
+    const data = await solicitarJSON(API_UBICACIONES, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(filtros),
+    });
+    return Array.isArray(data[campo]) ? data[campo] : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function poblarSelectUbicacion(select, valores, valorActual, etiquetaTodas) {
+  select.innerHTML = '';
+  const optTodas = document.createElement('option');
+  optTodas.value = '';
+  optTodas.textContent = etiquetaTodas;
+  select.appendChild(optTodas);
+  valores.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+  });
+  select.value = valores.includes(valorActual) ? valorActual : '';
+}
+
+async function actualizarUbicaciones() {
+  const selDep = document.getElementById('f-departamento');
+  const selProv = document.getElementById('f-provincia');
+  const selDist = document.getElementById('f-distrito');
+  const selSede = document.getElementById('f-sede');
+
+  const departamentos = await cargarValoresUbicacion({ fuente: filtroFuente }, 'departamentos');
+  poblarSelectUbicacion(selDep, departamentos, filtroDepartamento, 'Región (todas)');
+  filtroDepartamento = selDep.value;
+
+  if (!filtroDepartamento) {
+    selProv.innerHTML = '<option value="">Provincia (elige región)</option>';
+    selProv.disabled = true;
+    filtroProvincia = '';
+  } else {
+    selProv.disabled = false;
+    const provincias = await cargarValoresUbicacion({ fuente: filtroFuente, departamento: filtroDepartamento }, 'provincias');
+    poblarSelectUbicacion(selProv, provincias, filtroProvincia, 'Provincia (todas)');
+    filtroProvincia = selProv.value;
+  }
+
+  if (!filtroProvincia) {
+    selDist.innerHTML = '<option value="">Distrito (elige provincia)</option>';
+    selDist.disabled = true;
+    filtroDistrito = '';
+  } else {
+    selDist.disabled = false;
+    const distritos = await cargarValoresUbicacion({ fuente: filtroFuente, departamento: filtroDepartamento, provincia: filtroProvincia }, 'distritos');
+    poblarSelectUbicacion(selDist, distritos, filtroDistrito, 'Distrito (todos)');
+    filtroDistrito = selDist.value;
+  }
+
+  if (!filtroDistrito) {
+    selSede.innerHTML = '<option value="">Sede (elige distrito)</option>';
+    selSede.disabled = true;
+    filtroSede = '';
+  } else {
+    selSede.disabled = false;
+    const sedes = await cargarValoresUbicacion({ fuente: filtroFuente, departamento: filtroDepartamento, provincia: filtroProvincia, distrito: filtroDistrito }, 'sedes');
+    poblarSelectUbicacion(selSede, sedes, filtroSede, 'Sede (todas)');
+    filtroSede = selSede.value;
+  }
 }
 
 async function buscar() {
@@ -1246,6 +1361,23 @@ function iniciar() {
   document.addEventListener('click', e => {
     if (!document.getElementById('campo-empresa').contains(e.target)) cerrarEmpresas();
   });
+  document.getElementById('f-departamento').addEventListener('change', (e) => {
+    filtroDepartamento = e.target.value;
+    actualizarUbicaciones().then(() => { offset = 0; buscar(); });
+  });
+  document.getElementById('f-provincia').addEventListener('change', (e) => {
+    filtroProvincia = e.target.value;
+    actualizarUbicaciones().then(() => { offset = 0; buscar(); });
+  });
+  document.getElementById('f-distrito').addEventListener('change', (e) => {
+    filtroDistrito = e.target.value;
+    actualizarUbicaciones().then(() => { offset = 0; buscar(); });
+  });
+  document.getElementById('f-sede').addEventListener('change', (e) => {
+    filtroSede = e.target.value;
+    offset = 0;
+    buscar();
+  });
   document.getElementById('contacto-toggle').addEventListener('click', () => {
     document.getElementById('contacto-flotante').classList.toggle('abierto');
   });
@@ -1268,6 +1400,7 @@ function iniciar() {
   });
 
   cargarEmpresas();
+  actualizarUbicaciones();
   buscar();
   registrarVisita();
 }
