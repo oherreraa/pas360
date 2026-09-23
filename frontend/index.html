@@ -507,6 +507,63 @@ footer.pie .autor{
   color:var(--ink-soft);
 }
 
+/* Botón flotante de contacto */
+.contacto-flotante{
+  position:fixed;
+  right:1.4rem;
+  bottom:calc(var(--pie-alto) + 1.2rem);
+  z-index:900;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:0.6rem;
+}
+.contacto-flotante .contacto-opciones{
+  display:flex;
+  flex-direction:column;
+  gap:0.5rem;
+  background:var(--bg-raised);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:0 16px 40px rgba(0,0,0,0.28);
+  padding:0.7rem;
+  transform:translateY(0.4rem);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .16s ease, transform .16s ease;
+}
+.contacto-flotante.abierto .contacto-opciones{
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0);
+}
+.contacto-flotante .contacto-opciones a{
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.6rem 0.85rem;
+  border-radius:8px;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:0.85rem;
+  font-weight:600;
+  text-decoration:none;
+  white-space:nowrap;
+}
+.contacto-flotante .contacto-opciones a:hover{border-color:var(--accent); color:var(--accent);}
+.contacto-flotante .contacto-toggle{
+  width:52px; height:52px;
+  border-radius:50%;
+  border:none;
+  background:var(--accent);
+  color:var(--accent-ink);
+  font-size:1.4rem;
+  cursor:pointer;
+  box-shadow:0 10px 26px rgba(0,0,0,0.3);
+  display:flex; align-items:center; justify-content:center;
+}
+.contacto-flotante .contacto-toggle:hover{filter:brightness(1.05);}
+
 /* Accesibilidad y pulido de interacción */
 .skip-link{
   position:fixed; top:0.75rem; left:0.75rem; z-index:9999;
@@ -671,6 +728,14 @@ a:focus-visible{
 </div>
 </main>
 
+<div class="contacto-flotante" id="contacto-flotante">
+  <div class="contacto-opciones" id="contacto-opciones">
+    <a href="https://wa.me/51997523069?text=Hola%2C%20vi%20PAS%20360%C2%B0%20y%20quisiera%20algo%20similar." target="_blank" rel="noopener">WhatsApp</a>
+    <a href="mailto:ai.salvita@gmail.com?subject=Consulta%20sobre%20PAS%20360%C2%B0&body=Hola%2C%20vi%20PAS%20360%C2%B0%20y%20quisiera%20algo%20similar.">Correo</a>
+  </div>
+  <button type="button" class="contacto-toggle" id="contacto-toggle" title="Contactar" aria-label="Contactar">💬</button>
+</div>
+
 <footer class="pie">
   PAS 360° — análisis retrospectivo de resoluciones públicas del TFA y la DFAI (OEFA). No es asesoría legal.
   <span class="autor">Creado por Oscar Herrera Amézquita</span>
@@ -682,6 +747,7 @@ const API_DETALLE = '/webhook/pas360-detalle';
 const API_CHAT = '/webhook/pas360-chat';
 const API_ESQUEMA = '/webhook/pas360-esquema';
 const API_EMPRESAS = '/webhook/pas360-empresas';
+const API_VISITA = '/webhook/pas360-visita';
 const LIMIT = 12;
 
 let offset = 0;
@@ -722,6 +788,16 @@ async function solicitarJSON(url, opciones = {}) {
   const tipo = respuesta.headers.get('content-type') || '';
   if (!tipo.includes('application/json')) throw new Error('Respuesta no válida del servidor');
   return respuesta.json();
+}
+
+function registrarVisita() {
+  try {
+    fetch(API_VISITA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pagina: location.pathname, referrer: document.referrer }),
+    }).catch(() => {});
+  } catch (e) { /* no bloquear la carga del sitio por esto */ }
 }
 
 // ---------- tema claro/oscuro ----------
@@ -1170,6 +1246,14 @@ function iniciar() {
   document.addEventListener('click', e => {
     if (!document.getElementById('campo-empresa').contains(e.target)) cerrarEmpresas();
   });
+  document.getElementById('contacto-toggle').addEventListener('click', () => {
+    document.getElementById('contacto-flotante').classList.toggle('abierto');
+  });
+  document.addEventListener('click', e => {
+    if (!document.getElementById('contacto-flotante').contains(e.target)) {
+      document.getElementById('contacto-flotante').classList.remove('abierto');
+    }
+  });
   document.getElementById('f-anio').addEventListener('keydown', (e) => { if (e.key === 'Enter') { offset = 0; buscar(); } });
   document.getElementById('btn-prev').addEventListener('click', () => { offset = Math.max(offset - LIMIT, 0); buscar(); });
   document.getElementById('btn-next').addEventListener('click', () => { offset += LIMIT; buscar(); });
@@ -1185,6 +1269,7 @@ function iniciar() {
 
   cargarEmpresas();
   buscar();
+  registrarVisita();
 }
 
 document.addEventListener('DOMContentLoaded', iniciar);
