@@ -75,8 +75,12 @@ LISTADO_HREF_RE = re.compile(
     r'href="(/institucion/oefa/informes-publicaciones/(\d+)-resolucion-[^"]+)"'
 )
 PDF_HREF_RE = re.compile(r'href="([^"]+\.pdf[^"]*)"')
+# A diferencia del TFA (bare "RESOLUCIÓN N°"), los encabezados de la DFAI
+# suelen decir "RESOLUCIÓN DIRECTORAL N°" o "RESOLUCIÓN SUBDIRECTORAL N°"
+# -- confirmado en el primer test real contra la página de la DFAI.
 RESOLUCION_RE = re.compile(
-    r"RESOLUCI[ÓO]N\s+N[°ºO.]*\s*:?\s*([\d]+-\d{4}-OEFA[\w/\-]*)", re.IGNORECASE
+    r"RESOLUCI[ÓO]N\s+(?:DIRECTORAL\s+|SUBDIRECTORAL\s+)?N[°ºO.]*\s*:?\s*([\d]+-\d{4}-OEFA[\w/\-]*)",
+    re.IGNORECASE,
 )
 EXPEDIENTE_RE = re.compile(r"EXPEDIENTE\s+N[°ºO.]*\s*:?\s*([\w./\-]+)", re.IGNORECASE)
 SECTOR_RE = re.compile(r"SECTOR\s*:?\s*([A-ZÁÉÍÓÚÑ ]+)")
