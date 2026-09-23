@@ -525,21 +525,6 @@ a:focus-visible{
 .campo-busqueda input:focus-visible,
 .chat-input textarea:focus-visible{border-color:var(--accent);}
 .campo-anio{max-width:160px;}
-.select-ubicacion{
-  font-family:var(--sans);
-  font-size:0.86rem;
-  background:var(--bg-card);
-  border:1px solid var(--line-strong);
-  color:var(--ink-soft);
-  padding:0.5rem 0.8rem;
-  border-radius:8px;
-  cursor:pointer;
-  outline:none;
-  max-width:220px;
-  transition:border-color 0.15s ease, color 0.15s ease;
-}
-.select-ubicacion:hover{border-color:var(--accent); color:var(--ink);}
-.select-ubicacion[hidden]{display:none;}
 .tarjeta{cursor:pointer;}
 .tarjeta:focus-visible{border-color:var(--accent);}
 .estado-live{min-height:1.25rem;}
@@ -600,21 +585,6 @@ a:focus-visible{
         <button class="chip" data-grupo="sector" data-valor="HIDROCARBUROS" title="Exploración, producción, transporte o comercialización de hidrocarburos">Hidrocarburos</button>
         <button class="chip" data-grupo="sector" data-valor="INDUSTRIA" title="Actividades industriales y manufactureras">Industria</button>
         <button class="chip" data-grupo="sector" data-valor="ELECTRICIDAD" title="Generación, transmisión o distribución eléctrica">Electricidad</button>
-      </div>
-      <div class="fila">
-        <span class="rotulo" id="rotulo-ubicacion">Ubicación</span>
-        <select class="select-ubicacion" id="f-departamento" title="Filtrar por región/departamento donde se ubica la unidad fiscalizable">
-          <option value="">Región (todas)</option>
-        </select>
-        <select class="select-ubicacion" id="f-provincia" title="Filtrar por provincia (según la región elegida)">
-          <option value="">Provincia (todas)</option>
-        </select>
-        <select class="select-ubicacion" id="f-distrito" title="Filtrar por distrito (según la provincia elegida)">
-          <option value="">Distrito (todos)</option>
-        </select>
-        <select class="select-ubicacion" id="f-sede" title="Filtrar por sede o unidad fiscalizable específica" hidden>
-          <option value="">Sede (todas)</option>
-        </select>
       </div>
       <div class="fila">
         <label class="rotulo" for="f-empresa">Empresa</label>
@@ -712,7 +682,6 @@ const API_DETALLE = '/webhook/pas360-detalle';
 const API_CHAT = '/webhook/pas360-chat';
 const API_ESQUEMA = '/webhook/pas360-esquema';
 const API_EMPRESAS = '/webhook/pas360-empresas';
-const API_UBICACIONES = '/webhook/pas360-ubicaciones';
 const LIMIT = 12;
 
 let offset = 0;
@@ -722,10 +691,6 @@ let filtroSector = '';
 let filtroDesenlace = '';
 let filtroImputacion = '';
 let filtroSolucion = '';
-let filtroDepartamento = '';
-let filtroProvincia = '';
-let filtroDistrito = '';
-let filtroSede = '';
 let resolucionActual = null; // {id, numero_resolucion, fuente}
 let historialChat = [];
 let mermaidListo = false;
@@ -812,11 +777,7 @@ function iniciarChips() {
       });
       btn.classList.add('activo');
       btn.setAttribute('aria-pressed', 'true');
-      if (grupo === 'fuente') {
-        filtroFuente = btn.dataset.valor;
-        filtroDepartamento = ''; filtroProvincia = ''; filtroDistrito = ''; filtroSede = '';
-        cargarUbicaciones();
-      }
+      if (grupo === 'fuente') filtroFuente = btn.dataset.valor;
       if (grupo === 'sector') filtroSector = btn.dataset.valor;
       if (grupo === 'desenlace') filtroDesenlace = btn.dataset.valor;
       if (grupo === 'imputacion') filtroImputacion = btn.dataset.valor;
@@ -835,54 +796,9 @@ function construirFiltros() {
   if (filtroDesenlace) body[filtroDesenlace] = true;
   if (filtroImputacion) body[filtroImputacion] = true;
   if (filtroSolucion) body[filtroSolucion] = true;
-  if (filtroDepartamento) body.departamento = filtroDepartamento;
-  if (filtroProvincia) body.provincia = filtroProvincia;
-  if (filtroDistrito) body.distrito = filtroDistrito;
-  if (filtroSede) body.sede = filtroSede;
   if (empresa) body.administrado = empresa;
   if (anio) body.anio = anio;
   return body;
-}
-
-// ---------- ubicación en cascada (región / provincia / distrito / sede) ----------
-function poblarSelectUbicacion(id, etiquetaTodos, valores, actual) {
-  const sel = document.getElementById(id);
-  const lista = valores || [];
-  sel.innerHTML = '';
-  const optTodos = document.createElement('option');
-  optTodos.value = '';
-  optTodos.textContent = etiquetaTodos;
-  sel.appendChild(optTodos);
-  for (const v of lista) {
-    const opt = document.createElement('option');
-    opt.value = v;
-    opt.textContent = v;
-    sel.appendChild(opt);
-  }
-  sel.value = lista.includes(actual) ? actual : '';
-}
-
-async function cargarUbicaciones() {
-  const body = { fuente: filtroFuente };
-  if (filtroDepartamento) body.departamento = filtroDepartamento;
-  if (filtroProvincia) body.provincia = filtroProvincia;
-  if (filtroDistrito) body.distrito = filtroDistrito;
-  const empresa = document.getElementById('f-empresa').value.trim();
-  const filtrarPorEmpresa = empresa && empresaSeleccionada;
-  if (filtrarPorEmpresa) body.administrado = empresa;
-  try {
-    const data = await solicitarJSON(API_UBICACIONES, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    poblarSelectUbicacion('f-departamento', 'Región (todas)', data.departamentos, filtroDepartamento);
-    poblarSelectUbicacion('f-provincia', 'Provincia (todas)', data.provincias, filtroProvincia);
-    poblarSelectUbicacion('f-distrito', 'Distrito (todos)', data.distritos, filtroDistrito);
-    const sedes = data.sedes || [];
-    poblarSelectUbicacion('f-sede', 'Sede (todas)', sedes, filtroSede);
-    document.getElementById('f-sede').hidden = !(sedes.length || filtrarPorEmpresa);
-  } catch (e) { /* filtro de ubicación es un extra, no bloquea la búsqueda si falla */ }
 }
 
 async function buscar() {
@@ -996,7 +912,6 @@ function seleccionarEmpresa(nombre) {
   actualizarBotonLimpiar();
   cerrarEmpresas();
   offset = 0;
-  cargarUbicaciones();
   buscar();
 }
 
@@ -1249,33 +1164,6 @@ function iniciar() {
     empresaInput.focus();
     mostrarEmpresas();
     offset = 0;
-    cargarUbicaciones();
-    buscar();
-  });
-  document.getElementById('f-departamento').addEventListener('change', (e) => {
-    filtroDepartamento = e.target.value;
-    filtroProvincia = ''; filtroDistrito = ''; filtroSede = '';
-    offset = 0;
-    cargarUbicaciones();
-    buscar();
-  });
-  document.getElementById('f-provincia').addEventListener('change', (e) => {
-    filtroProvincia = e.target.value;
-    filtroDistrito = ''; filtroSede = '';
-    offset = 0;
-    cargarUbicaciones();
-    buscar();
-  });
-  document.getElementById('f-distrito').addEventListener('change', (e) => {
-    filtroDistrito = e.target.value;
-    filtroSede = '';
-    offset = 0;
-    cargarUbicaciones();
-    buscar();
-  });
-  document.getElementById('f-sede').addEventListener('change', (e) => {
-    filtroSede = e.target.value;
-    offset = 0;
     buscar();
   });
   document.addEventListener('click', e => {
@@ -1295,7 +1183,6 @@ function iniciar() {
   });
 
   cargarEmpresas();
-  cargarUbicaciones();
   buscar();
 }
 
